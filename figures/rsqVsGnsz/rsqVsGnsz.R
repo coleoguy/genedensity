@@ -1,0 +1,73 @@
+
+
+
+# constants
+requiredPackages <- c("data.table", "ggplot2")
+
+# paths
+functionsPath <- "../../analysis/functions.R"
+parsedResultsCsvPath <- "../../results/vertebrates/parsedResults.csv"
+cladeDataCsvPath <- "../../data/vertebrates/cladeData.csv"
+
+
+# load stuff in
+source(functionsPath)
+loadPackages(requiredPackages)
+parsedResults <- fread(parsedResultsCsvPath)
+cladeData <- fread(cladeDataCsvPath)
+
+# rsq vs estimated gnsz
+dat0 <- cladeData[!is.na(cladeData$estimatedGenomeSize.bp)]
+dat <- dat0[!is.na(dat0$class)]
+species <- dat$species
+table <- unique(data.frame(parsedResults$species, parsedResults$speciesRsquared))
+table <- table[table[[1]] %in% species, ]
+rsq <- table[[2]]
+gnsz.bp <- dat$estimatedGenomeSize.bp
+gnsz.Gbp <- gnsz.bp / 1000000000
+class <- dat$class
+customClade <- class
+customClade[customClade == "Actinopterygii"] <- "Ray-finned fish"
+customClade[customClade == "Aves"] <- "Reptiles"
+customClade[customClade == "Mammalia"] <- "Mammals"
+customClade[customClade == "Reptilia"] <- "Reptiles"
+otherClades <- !customClade %in% c("Ray-finned fish", "Reptiles", "Mammals")
+customClade[otherClades] <- "Others"
+customClade <- factor(customClade, levels = c("Mammals", "Ray-finned fish", "Reptiles", "Others"))
+rsqVsGnsz <- data.frame(species, rsq, gnsz.Gbp, class, customClade)
+fit <- lm(rsqVsGnsz$rsq ~ rsqVsGnsz$gnsz.Gbp)
+slope <- signif(summary(fit)$coefficients[2, 1], 3)
+intercept <- signif(summary(fit)$coefficients[1, 1], 3)
+slopePvalue <- signif(summary(fit)$coefficients[2, 4], 3)
+fitRquared <- signif(summary(fit)$adj.r.squared, 3)
+
+ggplot(rsqVsGnsz, aes(x = gnsz.Gbp, y = rsq, color = customClade)) +
+  geom_point(shape = 16, alpha = 0.4, size = 2.3) +
+  scale_color_manual(labels = c(
+    paste0("Mammals\n(n = ", sum(customClade == "Mammals"), ")"),
+    paste0("Ray-finned fish\n(n = ", sum(customClade == "Ray-finned fish"), ")"), 
+    paste0("Reptiles\n(n = ", sum(customClade == "Reptiles"), ")"),
+    paste0("Others\n(n = ", sum(customClade == "Others"), ")")
+  ), values = c("#e41a1c", "#377eb8", "#4daf4a", "#984ea3"))+
+  ggtitle(bquote(italic(r)^2~"vs Estimated Genome Size"))+
+  theme(plot.title = element_text(hjust = 0.475),
+        axis.line = element_line(color = "black"),
+        legend.title = element_blank(),
+        legend.background = element_rect(fill = "#f2f2f2", color = "black", linewidth = 0.5),
+        panel.background = element_rect(fill = "white"),
+        panel.grid.major = element_line(color = "black", linetype = "dotted", size = 0.25),
+        legend.position = c(0.86, 0.69),
+        legend.key.size = unit(21, "points"))+
+  xlim(c(0, 6.8)) +
+  ylim(c(0.09, 1.02))+
+  # annotate(geom = "text", x = 3.700, y = 0.59, label = bquote(italic(y)==.(slope)*italic(x)+.(intercept)), size = 3.2)+
+  # annotate(geom = "text", x = 3.700, y = 0.535, label = bquote("p-value for β1:"~.(slopePvalue)), size = 3.2)+
+  # annotate(geom = "text", x = 3.700, y = 0.491, label = bquote(italic(r)^2==.(fitRsquared)), size = 3.2)+
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed", linewidth = 0.5, fullrange = TRUE)+
+  labs(x = "Estimated Genome Size (Gbp)", y = bquote(italic(r)^2))
+ggsave(filename = "rsqVsGnsz.jpg", 
+       plot = last_plot(), 
+       width = 7680, 
+       height = 4320, 
+       units = "px", 
+       dpi = 1100)

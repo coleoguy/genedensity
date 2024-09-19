@@ -1,0 +1,77 @@
+
+
+# constants
+requiredPackages <- c("data.table", "ggplot2")
+
+# paths
+functionsPath <- "../../analysis/functions.R"
+parsedResultsCsvPath <- "../../results/vertebrates/parsedResults.csv"
+cladeDataCsvPath <- "../../data/vertebrates/cladeData.csv"
+
+
+
+# load stuff in
+source(functionsPath)
+loadPackages(requiredPackages)
+parsedResults <- fread(parsedResultsCsvPath)
+cladeData <- fread(cladeDataCsvPath)
+
+
+
+
+# rsq across clades
+table <- data.frame(parsedResults$species, parsedResults$speciesRsquared)
+table <- unique(table)
+species <- table[[1]]
+rsq <- table[[2]]
+dat <- cladeData[!is.na(cladeData$class)]
+dat <- data.frame(dat$species, dat$class)
+dat <- dat[dat[[1]] %in% species, ]
+species <- dat[[1]]
+class <- dat[[2]]
+rsq <- parsedResults$speciesRsquared
+table <- data.frame(parsedResults$species, rsq)
+table <- unique(na.omit(table))
+table <- table[which(species %in% table[[1]]), ]
+rsq <- table$rsq
+customClade <- class
+customClade[customClade == "Actinopterygii"] <- "Ray-finned fish"
+customClade[customClade == "Aves"] <- "Reptiles"
+customClade[customClade == "Mammalia"] <- "Mammals"
+customClade[customClade == "Reptilia"] <- "Reptiles"
+otherClades <- !customClade %in% c("Ray-finned fish", "Reptiles", "Mammals")
+customClade[otherClades] <- "Others"
+customClade <- factor(customClade, levels = c("Mammals", "Ray-finned fish", "Reptiles", "Others"))
+cladeRsq <- data.frame(species, class, rsq, customClade)
+numMammals <- sum(customClade == "Mammals")
+numFish <- sum(customClade == "Ray-finned fish")
+numReptiles <- sum(customClade == "Reptiles")
+numOthers <- sum(customClade == "Others")
+anova <- aov(rsq ~ customClade, data = cladeRsq)
+pvalue <- (summary(anova)[[1]])[1, 5]
+if (pvalue < 0.05) {
+  tukey <- TukeyHSD(anova)
+}
+cladeRsqFiltered <- cladeRsq[cladeRsq$customClade != "Others", ]
+
+ggplot(cladeRsqFiltered, aes(x = customClade, y = rsq, fill = customClade)) +
+  ggtitle(bquote(italic(r)^2~"Across Clades"))+
+  theme(plot.title = element_text(hjust = 0.45), 
+        axis.line = element_line(color = "black"),
+        panel.background = element_rect(fill = "white"),
+        scale_fill_manual(values = c("#e41a1c", "#377eb8", "#4daf4a")),
+        panel.grid.major = element_line(color = "black", linetype = "dotted", size = 0.25))+
+  scale_x_discrete(labels = c("Mammals" = bquote("Mammals"~~(n==.(numMammals))), 
+                              "Ray-finned fish" = bquote("Ray-finned fish"~~(n==.(numFish))), 
+                              "Reptiles" = bquote("Reptiles"~~(n==.(numReptiles))))) +
+  labs(x = "", y = bquote(italic(r)^2)) +
+  guides(fill = "none") +
+  geom_violin() +
+  geom_boxplot(width = 0.05)+
+  geom_jitter(shape = 16, size = 1.5, position = position_jitter(0.23), alpha = 0.4, fill = "black", color = "black")
+ggsave(filename = "rsqClades.jpg", 
+       plot = last_plot(), 
+       width = 7680, 
+       height = 4320, 
+       units = "px", 
+       dpi = 1100)
