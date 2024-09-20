@@ -1,57 +1,95 @@
 
 
-dataFromFasta <- function(fastaFilePath, chromNum.1n, mitoContigKeywords) {
+dataFromFasta <- function(fasta.file.path, chromnum.1n, mito.keywords) {
   # load fasta file as a vector
-  fasta <- fread(fastaFilePath, header = FALSE, showProgress = TRUE)$V1
+  fasta <- fread(fasta.file.path, header = FALSE, showProgress = TRUE)$V1
   # get indices for the fasta vector
-  contigHeaderIndex <- which(grepl("^>", fasta))
+  contig.header.index <- which(grepl("^>", fasta))
   # get headers from fasta vector
-  contigHeader <- fasta[contigHeaderIndex]
+  contig.header <- fasta[contig.header.index]
   # get contig sizes from each header
-  contigSize.bp <- as.numeric(sub(".*:([0-9]+):1 REF", "\\1", contigHeader))
+  contig.size_bp <- as.numeric(sub(".*:([0-9]+):1 REF", "\\1", contig.header))
   # get contig names from each header
-  contigName <- sub(">\\s*([^ ]+).*", "\\1", contigHeader)
+  contig.name <- sub(">\\s*([^ ]+).*", "\\1", contig.header)
   # create table
-  fastaData <- data.table(contigName, contigSize.bp)
+  fasta.data <- data.table(contig.name, contig.size_bp)
   # create new column with assembly sizes
-  asmblySize.bp <- sum(fastaData$contigSize.bp[which(!tolower(fastaData$contigName) %in% mitoContigKeywords)])
-  fastaData <- data.table(fastaData, asmblySize.bp)
+  mito.indices <- which(!tolower(fasta.data$contig.name) %in% mito.keywords)
+  asmbly.size_bp <- sum(fasta.data$contig.size_bp[mito.indices])
+  fasta.data <- data.table(fasta.data, asmbly.size_bp)
   # sort by size
-  fastaData <- fastaData[order(fastaData$contigSize.bp, decreasing = TRUE), ]
+  fasta.data <- fasta.data[order(fasta.data$contig.size_bp, decreasing = TRUE), ]
   # Keep large contigs
-  fastaData <- head(fastaData, 2 * chromNum.1n)
-  return(fastaData)
+  fasta.data <- head(fasta.data, 2 * chromnum.1n)
+  return(fasta.data)
 }
 
-dataFromGtf <- function(gtfFilePath, contigName, mitoContigKeywords) {
+dataFromGtf <- function(gtf.file.path, contig.name, mito.keywords) {
   # read gtf
-  gtf <- fread(gtfFilePath, header = FALSE, showProgress = TRUE)
+  gtf <- fread(gtf.file.path, header = FALSE, showProgress = TRUE)
   # filter for genes only
   gtf <- gtf[which(gtf[, 3] == "gene"), ]
-  asmblyGeneCount <- nrow(gtf[!(gtf[[1]] %in% mitoContigKeywords), ])
+  asmbly.gene.count <- nrow(gtf[!(gtf[[1]] %in% mito.keywords), ])
   # make table
   geneFreqTable <- table(gtf[[1]])
   # get the number of genes in each contig
-  contigGeneCount <- sapply(contigName, function(contigName) table(gtf[[1]])[contigName])
-  gtfData <- data.table(contigGeneCount, asmblyGeneCount)
-  return(gtfData)
+  contig.gene.count <- sapply(contig.name, 
+                              function(contig.name) table(gtf[[1]])[contig.name])
+  gtf.data <- data.table(contig.gene.count, asmbly.gene.count)
+  return(gtf.data)
 }
 
-getCsvFullPaths <- function(csvDirPath) {
-  csvFiles <- list.files(csvDirPath)
-  csvFullPaths <- as.character(sapply(csvFiles, function(csvFiles) paste0(csvDirPath, "/", csvFiles)))
-  return(csvFullPaths)
+getCsvFullPaths <- function(csv.dir.path) {
+  csv.files <- list.files(csv.dir.path)
+  csv.full.paths <- as.character(sapply(csv.files, function(csv.files) {
+    paste0(csv.dir.path, "/", csv.files)
+    }))
+  return(csv.full.paths)
 }
 
-loadPackages <- function(requiredPackages) {
-  if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-  installedPackages <- requiredPackages %in% rownames(installed.packages())
-  if (any(installedPackages == FALSE)) {
-    BiocManager::install(requiredPackages[!installedPackages])
+getAsmblysz <- function(species) {
+  return(as.numeric(unique(parsed.results$asmbly.size_bp[parsed.results$species == species])))
+}
+
+
+getK2pMean <- function(files) {
+  # read text file into lines
+  divsum.vector <- readLines(paste0("../results/vertebrates/repeatLandscape/", files))
+  # look for the start of useful information
+  phrase <- "Coverage for each repeat class and divergence (Kimura)"
+  start.index <- match(phrase, divsum.vector) + 1
+  # condense the useful lines into a table
+  divsum.vector2 <- divsum.vector[start.index:length(divsum.vector)]
+  divsum.table <- read.table(textConnection(divsum.vector2), sep = " ", header = TRUE)
+  # drop NA columns
+  divsum.table2 <- divsum.table[-c(which(sapply(divsum.table, 
+                                              function(col) all(is.na(col)))))]
+  divergence <- divsum.table$Div
+  frequency <- rowSums(divsum.table2[, !names(divsum.table2) == "Div"])
+  k2p.mean <- sum(divergence*frequency)/sum(frequency)
+  return(k2p.mean)
+}
+
+
+getRsq <- function(species) {
+  filter.names <- parsed.results$species == species
+  if (any(filter.names)) {
+    rsq <- unique(parsed.results$species.rsquared[filter.names])
+    return(rsq)
+  } else {
+    return(NA)
   }
-  invisible(lapply(requiredPackages, library, character.only = TRUE))
 }
 
+
+getClass <- function(species) {
+  filter.names <- clades.gnsz$species == species
+  if (any(filter.names)) {
+    class <- clades.gnsz$class[filter.names]
+    return(class)
+  } else {
+    return(NA)
+  }
+}
 
 
