@@ -70,7 +70,6 @@ for (species in all.species) {
       dat <- dat[dat$contig.gene.count >= 2, ]
       # proceed if there are rows in the dataframe
       if (nrow(dat) != 0) {
-        fit <- summary(lm(dat$contig.gene.count ~ dat$contig.size_bp))
         contig.gene.dens_genes.per.bp <- dat$contig.gene.count/dat$contig.size_bp
         dat2 <- data.table(
           dat[, 1:4],
