@@ -2,28 +2,34 @@
 ## Zhaobo Hu
 ## zhaobohu2002@gmail.com
 
-## Description: reads a reference CSV to get species names and
-## chromosome numbers for each species. Then, for each species, pulls
-## information from fasta/fa and gtf/gff3 files to calculate gene
-## density and other relevant information for the longest contigs in
-## the assembly. The number of contigs considered for each species is
-## equal to the 2n chromosome number of the species. Then, calculates
-## the r-squared values for genes~contigSize as well as the length of
-## masked areas in each contig.
+## Description: reads a directory with fasta and gtf files to get the names of
+## each species to be analyzed. Skips the species if it has already been
+## analyzed (as per the existence of a result file). Then, finds the chromosome
+## number of the species from a csv file (skips the species if chromosome 
+## number is not found). Reads the fasta file of the species, and for each of
+## the longest 2N contigs, outputs the contig name, contig size, and assembly
+## size (assembly size is the same for all contigs of a species). Next, reads
+## the gtf file of the species and searches for the number of genes for each
+## contig name (also gets the number of genes in the assembly). Contigs with
+## less than 2 genes are then dropped, and if the species has any contigs
+## remaining, calculates the gene densities of each contig and writes the 
+## results to a csv file
 
-# load stuff in
+# verbose
+verbose <- FALSE
+
 library(data.table)
 source("functions.R")
+# load chromosome numbers
 chromnums.csv <- read.csv("../data/vertebrates/chromnums.csv")
-
-# constants
+# keywords to match and exclude mitochondrial contigs for assembly size calcs
 mito.keywords <- c("mt", "mito", "mitochondrial", "nonchromosomal")
-verbose <- TRUE
-
+# list genome files
 genome.files <- list.files("../data/vertebrates/genomes")
+# remove file extensions from genome file list
 all.species.underscore <- unique(gsub("\\..*$", "", genome.files))
+# remove underscores from genome file list to match for species chromnum csv file
 all.species <- gsub("_", " ", all.species.underscore)
-
 # begin loop
 for (species in all.species) {
   if (verbose == TRUE) {
@@ -31,14 +37,14 @@ for (species in all.species) {
     gc()
     print(noquote(paste0(species, " (", Sys.time(), ")")))
   }
-  # proceed if result file is not found
+  # proceed if result file is not found, else go to next species
   results.csv <- paste0("../results/vertebrates/individual_species_results/", 
                         gsub(" ", "_", species), 
                         ".csv")
   if (!file.exists(results.csv)) {
     # get chromosome number
     chromnum.1n <- chromnums.csv$chromnum.1n[chromnums.csv$species == species]
-    # proceed if chromosme number is available
+    # proceed if chromosme number is available, else go to next species
     if (!is.na(chromnum.1n)) {
       fasta.file.path <- paste0("../data/vertebrates/genomes/", 
                               gsub(" ", "_", species), 
@@ -59,7 +65,7 @@ for (species in all.species) {
       asmbly.gene.count <- gtf.data$asmbly.gene.count
       rm(gtf.data)
       gc()
-      # assemble dataframe
+      # assemble datatable
       dat <- data.table(species,
                         contig.name, 
                         contig.size_bp, 
@@ -68,14 +74,17 @@ for (species in all.species) {
                         asmbly.gene.count)
       # drop contigs with less than 2 genes
       dat <- dat[dat$contig.gene.count >= 2, ]
-      # proceed if there are rows in the dataframe
+      # proceed if data.table is not empty
       if (nrow(dat) != 0) {
+        # calculate gene density
         contig.gene.dens_genes.per.bp <- dat$contig.gene.count/dat$contig.size_bp
+        # add gene density to datatable
         dat2 <- data.table(
           dat[, 1:4],
           contig.gene.dens_genes.per.bp,
           dat[, 5:6]
         )
+        # write results
         fwrite(dat2, file = results.csv, row.names = FALSE)
         if (verbose == TRUE) {
           print(noquote("   Successfully written!"))

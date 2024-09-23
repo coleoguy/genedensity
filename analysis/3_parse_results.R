@@ -1,31 +1,15 @@
 
-# load package
-library(data.table)
+## Zhaobo Hu
+## zhaobohu2002@gmail.com
 
-# constants
+## Takes a species as input. drop contigs shorter than 10 million bp. drops
+## assemblies that have less than 3 contigs or with p-values less than 0.05
+
+# all contigs shorter than this size will be dropped
 minContigSize <- 10000000
 
-combined.results <- fread("../results/vertebrates/combined_results.csv")
-result <- data.table()
+source("functions.R")
+combined.results <- read.csv("../results/vertebrates/combined_results.csv")
 species <- unique(combined.results$species)
-for (i in species) {
-  # subset results for species
-  table <- combined.results[combined.results$species == i]
-  # filter results by contig size
-  table2 <- table[table$contig.size_bp >= minContigSize]
-  # if has more tahn 2 contigs
-  if (nrow(table2) > 2) {
-    # calculate p-value
-    fit <- summary(lm(table2$contig.gene.count ~ table2$contig.size_bp))
-    species.pvalue <- fit$coefficients[2, 4]
-    # if p-value is less than 0.05
-    if (species.pvalue < 0.05) {
-      # add p-value and adjusted r-squared
-      species.rsquared <- fit$adj.r.squared
-      table3 <- data.frame(table2, species.rsquared, species.pvalue)
-      result <- rbind(result, table3)
-    }
-  }
-}
-
-fwrite(result, file = "../results/vertebrates/parsed_results.csv", row.names = FALSE)
+results <- do.call(rbind, lapply(species, parseResults))
+write.csv(results, file = "../results/vertebrates/parsed_results.csv", row.names = FALSE)

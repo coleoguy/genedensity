@@ -1,25 +1,18 @@
 
-
 ## Zhaobo Hu
 ## zhaobohu2002@gmail.com
 
 ## description: combines the files in the results folder into a 
-## single .csv file. Then, creates a .csv file with species names
-## for manual curation of clade data. If this file already exists, 
-## the script will add new species to the file if possible.
+## single .csv file
 
-# load package
 library(data.table)
-
-# source functions
 source("functions.R")
-
-# combine results
-csvFullPaths <- getCsvFullPaths("../results/vertebrates/individual_species_results")
-resultsList <- lapply(csvFullPaths, fread)
-resultsDataTable <- na.omit(rbindlist(resultsList, fill = TRUE))
-species <- unique(resultsDataTable$species)
-fwrite(resultsDataTable, "../results/vertebrates/combined_results.csv", row.names = FALSE)
+# directory containing individual result files
+csv.dir.path <- "../results/vertebrates/individual_species_results"
+csv.file.paths <- paste0(csv.dir.path, "/", list.files(csv.dir.path))
+results.list <- lapply(csv.file.paths, fread)
+results.table <- na.omit(rbindlist(results.list, fill = TRUE))
+fwrite(results.table, "../results/vertebrates/combined_results.csv", row.names = FALSE)
 
 
 
