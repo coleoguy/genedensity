@@ -7,9 +7,11 @@
 
 # all contigs shorter than this size will be dropped
 minContigSize <- 10000000
+# "vertebrates" or "invertebrates"?
+vert.invert <- "vertebrates"
 
 source("functions.R")
-combined.results <- read.csv("../results/vertebrates/combined_results.csv")
+combined.results <- read.csv(paste0("../results/", vert.invert, "/combined_results.csv"))
 species <- unique(combined.results$species)
 results <- do.call(rbind, lapply(species, parseResults))
-write.csv(results, file = "../results/vertebrates/parsed_results.csv", row.names = FALSE)
+write.csv(results, file = paste0("../results/", vert.invert, "/parsed_results.csv"), row.names = FALSE)

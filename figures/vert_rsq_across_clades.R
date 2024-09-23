@@ -1,10 +1,7 @@
 
 
-# load package
+
 library(ggplot2)
-
-
-
 parsed.results <- read.csv("../results/vertebrates/parsed_results.csv")
 clades.gnsz <- read.csv("../data/vertebrates/clades_gnsz.csv")
 table <- data.frame(parsed.results$species, parsed.results$species.rsquared)
@@ -56,7 +53,7 @@ ggplot(clade.rsq.filtered, aes(x = custom.clade, y = rsq, fill = custom.clade)) 
   geom_violin() +
   geom_boxplot(width = 0.05)+
   geom_jitter(shape = 16, size = 1.5, position = position_jitter(0.23), alpha = 0.4, fill = "black", color = "black")
-ggsave(filename = "rsq_across_clades.jpg", 
+ggsave(filename = "vert_rsq_across_clades.jpg", 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 

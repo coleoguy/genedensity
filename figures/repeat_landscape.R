@@ -1,15 +1,14 @@
 
 
-# load package
+# "vertebrates" or "invertebrates"?
+vert.invert <- "vertebrates"
+
 library(ggplot2)
-
-
-
-combined.results <- read.csv("../results/vertebrates/combined_results.csv")
-files <- list.files("../results/vertebrates/repeat_landscape")
+combined.results <- read.csv(paste0("../results/", vert.invert, "/combined_results.csv"))
+files <- list.files(paste0("../results/", vert.invert, "/repeat_landscape"))
 for (file in files) {
   # read text file into lines
-  divsum.vector <- readLines(paste0("../results/vertebrates/repeat_landscape/", file))
+  divsum.vector <- readLines(paste0("../results/", vert.invert, "/repeat_landscape/", file))
   # look for the start of useful information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, divsum.vector) + 1
@@ -86,7 +85,7 @@ for (file in files) {
          y = "% of Genome Size Occupied by Repeats")
   ggsave(filename = paste0(gsub(" ", "_", species), ".jpg"), 
          plot = last_plot(), 
-         path = "../figures/vertebrates/repeat_landscape", 
+         path = paste0("../figures/", vert.invert, "/repeat_landscape"), 
          width = 7680, 
          height = 4320, 
          units = "px", 

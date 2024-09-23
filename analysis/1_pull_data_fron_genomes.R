@@ -15,17 +15,20 @@
 ## remaining, calculates the gene densities of each contig and writes the 
 ## results to a csv file
 
+# "vertebrates" or "invertebrates"?
+vert.invert <- "vertebrates"
 # verbose
 verbose <- FALSE
 
 library(data.table)
 source("functions.R")
 # load chromosome numbers
-chromnums.csv <- read.csv("../data/vertebrates/chromnums.csv")
+paste0("../data/", vert.invert, "/chromnums.csv")
+chromnums.csv <- read.csv(paste0("../data/", vert.invert, "/chromnums.csv"))
 # keywords to match and exclude mitochondrial contigs for assembly size calcs
 mito.keywords <- c("mt", "mito", "mitochondrial", "nonchromosomal")
 # list genome files
-genome.files <- list.files("../data/vertebrates/genomes")
+genome.files <- list.files(paste0("../data/", vert.invert, "/genomes"))
 # remove file extensions from genome file list
 all.species.underscore <- unique(gsub("\\..*$", "", genome.files))
 # remove underscores from genome file list to match for species chromnum csv file
@@ -38,7 +41,9 @@ for (species in all.species) {
     print(noquote(paste0(species, " (", Sys.time(), ")")))
   }
   # proceed if result file is not found, else go to next species
-  results.csv <- paste0("../results/vertebrates/individual_species_results/", 
+  results.csv <- paste0("../results/", 
+                        vert.invert, 
+                        "/individual_species_results/", 
                         gsub(" ", "_", species), 
                         ".csv")
   if (!file.exists(results.csv)) {
@@ -46,10 +51,14 @@ for (species in all.species) {
     chromnum.1n <- chromnums.csv$chromnum.1n[chromnums.csv$species == species]
     # proceed if chromosme number is available, else go to next species
     if (!is.na(chromnum.1n)) {
-      fasta.file.path <- paste0("../data/vertebrates/genomes/", 
-                              gsub(" ", "_", species), 
-                              ".fa")
-      gtf.file.path <- paste0("../data/vertebrates/genomes/", 
+      fasta.file.path <- paste0("../data/", 
+                                vert.invert, 
+                                "/genomes/", 
+                                gsub(" ", "_", species), 
+                                ".fa")
+      gtf.file.path <- paste0("../data/", 
+                              vert.invert, 
+                              "/genomes/", 
                               gsub(" ", "_", species), 
                               ".gtf")
       # read fasta

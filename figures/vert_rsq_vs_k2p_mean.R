@@ -1,20 +1,12 @@
 
 
 
-# load packages
 library(ggplot2)
-
-
-# source functions
 source("../analysis/functions.R")
-
 parsed.results <- read.csv("../results/vertebrates/parsed_results.csv")
 clades.gnsz <- read.csv("../data/vertebrates/clades_gnsz.csv")
-
-
-
-
 files <- list.files("../results/vertebrates/repeat_landscape")
+vert.invert <- "vertebrates"
 k2p.mean <- sapply(files, getK2pMean)
 species.lower <- gsub("_", " ", gsub("_summary\\.divsum$", "", files))
 species <- gsub("^(\\w)(.*)", "\\U\\1\\L\\2", species.lower, perl = TRUE)
@@ -56,7 +48,7 @@ ggplot(rsq.vs.k2p.mean, aes(x = k2p.mean, y = rsq, color = custom.clade)) +
   ylim(c(0, 1))+
   geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed", linewidth = 0.5, fullrange = TRUE)+
   labs(x = "Mean K2P Distance (subs per site)", y = bquote(italic(r)^2))
-ggsave(filename = "rsq_vs_k2p_mean.jpg", 
+ggsave(filename = "vert_rsq_vs_k2p_mean.jpg", 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 

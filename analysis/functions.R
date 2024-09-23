@@ -83,7 +83,7 @@ getAsmblysz <- function(species) {
 getK2pMean <- function(files) {
   # read text file into lines
   divsum.vector <- readLines(
-    paste0("../results/vertebrates/repeatLandscape/", files))
+    paste0("../results/", vert.invert, "/repeat_landscape/", files))
   # look for the start of useful information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, divsum.vector) + 1

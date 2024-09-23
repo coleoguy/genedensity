@@ -1,12 +1,6 @@
 
 
-
-# load package
 library(ggplot2)
-
-
-
-
 parsed.results <- read.csv("../results/vertebrates/parsed_results.csv")
 clades.gnsz <- read.csv("../data/vertebrates/clades_gnsz.csv")
 dat0 <- clades.gnsz[!is.na(clades.gnsz$genome.size.est_bp), ]
@@ -57,7 +51,7 @@ ggplot(rsq.vs.gnsz, aes(x = gnsz_Gbp, y = rsq, color = custom.clade)) +
   # annotate(geom = "text", x = 3.700, y = 0.491, label = bquote(italic(r)^2==.(fit.rsquared)), size = 3.2)+
   geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed", linewidth = 0.5, fullrange = TRUE)+
   labs(x = "Estimated Genome Size (Gbp)", y = bquote(italic(r)^2))
-ggsave(filename = "rsq_vs_gnsz.jpg", 
+ggsave(filename = "vert_rsq_vs_gnsz.jpg", 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 

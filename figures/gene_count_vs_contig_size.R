@@ -1,15 +1,14 @@
 
-# load packages
-library(data.table)
+# "vertebrates" or "invertebrates"?
+vert.invert <- "vertebrates"
+
 library(ggplot2)
-
-dat <- fread("../results/vertebrates/parsed_results.csv")
+dat <- read.csv(paste0("../results/", vert.invert, "/parsed_results.csv"))
 species <- unique(dat$species)
-
 for (i in species) {
   gene.count <- dat$contig.gene.count[dat$species == i]
   contig.size <- dat$contig.size_bp[dat$species == i]
-  gene.count.vs.contig.size <- data.table(gene.count, contig.size)
+  gene.count.vs.contig.size <- data.frame(gene.count, contig.size)
   fit <- summary(lm(gene.count ~ contig.size))
   slope <- signif(fit$coefficients[2, 1], 3)
   intercept <- signif(fit$coefficients[1, 1], 3)
@@ -28,7 +27,7 @@ for (i in species) {
       x = "Contig Size", 
       y = "Gene Count")
   ggsave(filename = paste0(i, ".jpg"), 
-         path = "vertebrates/gene_count_vs_contig_size",
+         path = paste0(vert.invert, "/gene_count_vs_contig_size"),
          plot = last_plot(), 
          width = 7680, 
          height = 4320, 

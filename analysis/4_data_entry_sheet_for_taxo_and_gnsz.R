@@ -5,8 +5,11 @@
 ## for each species. if the csv already exists and new genomes have been
 ## analyzed, appends the new species to the existing csv.
 
-clades.gnsz.csv <- "../data/vertebrates/clades_gnsz.csv"
-parsed.results <- read.csv("../results/vertebrates/parsed_results.csv")
+# "vertebrates" or "invertebrates"?
+vert.invert <- "vertebrates"
+
+clades.gnsz.csv <- paste0("../data/", vert.invert, "/clades_gnsz.csv")
+parsed.results <- read.csv(paste0("../results/", vert.invert, "/parsed_results.csv"))
 species <- unique(parsed.results$species)
 # if data file doesn't exist, create new file. else append to existing file
 if (!file.exists(clades.gnsz.csv)) {
