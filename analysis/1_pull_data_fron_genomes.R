@@ -23,7 +23,6 @@ verbose <- FALSE
 library(data.table)
 source("functions.R")
 # load chromosome numbers
-paste0("../data/", vert.invert, "/chromnums.csv")
 chromnums.csv <- read.csv(paste0("../data/", vert.invert, "/chromnums.csv"))
 # keywords to match and exclude mitochondrial contigs for assembly size calcs
 mito.keywords <- c("mt", "mito", "mitochondrial", "nonchromosomal")
@@ -33,6 +32,8 @@ genome.files <- list.files(paste0("../data/", vert.invert, "/genomes"))
 all.species.underscore <- unique(gsub("\\..*$", "", genome.files))
 # remove underscores from genome file list to match for species chromnum csv file
 all.species <- gsub("_", " ", all.species.underscore)
+# TODO get list of all species with results
+# TODO subset all.species to just the ones that havent been run
 # begin loop
 for (species in all.species) {
   if (verbose == TRUE) {
@@ -88,6 +89,8 @@ for (species in all.species) {
         # calculate gene density
         contig.gene.dens_genes.per.bp <- dat$contig.gene.count/dat$contig.size_bp
         # add gene density to datatable
+        # TODO don't create a new variable just overwrite the version of dat
+        # TODO consider using the way we talked about dat$gene.density <- contig.gene.dens_genes.per.bp
         dat2 <- data.table(
           dat[, 1:4],
           contig.gene.dens_genes.per.bp,
@@ -101,7 +104,7 @@ for (species in all.species) {
       } else {
         fwrite(data.table(), file = results.csv, row.names = FALSE)
         if (verbose == TRUE) {
-          print(noquote("   Aborted (no genes that match contig names)"))
+          print(noquote("   Aborted (sequence names in gtf and fasta do not match)"))
         }
       }
     } else {
