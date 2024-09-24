@@ -24,8 +24,8 @@ rsq.vs.k2p.mean <- na.omit(data.frame(species, k2p.mean, rsq, class, custom.clad
 fit <- lm(rsq.vs.k2p.mean$rsq ~ rsq.vs.k2p.mean$k2p.mean)
 slope <- signif(summary(fit)$coefficients[2, 1], 3)
 intercept <- signif(summary(fit)$coefficients[1, 1], 3)
-slope.pvalue <- signif(summary(fit)$coefficients[2, 4], 3)
-slope.rsquared <- signif(summary(fit)$adj.r.squared, 3)
+fit.pval <- signif(summary(fit)$coefficients[2, 4], 3)
+fit.rsq <- signif(summary(fit)$adj.r.squared, 3)
 
 ggplot(rsq.vs.k2p.mean, aes(x = k2p.mean, y = rsq, color = custom.clade)) +
   geom_point(shape = 16, alpha = 0.4, size = 2.3) +
@@ -35,8 +35,8 @@ ggplot(rsq.vs.k2p.mean, aes(x = k2p.mean, y = rsq, color = custom.clade)) +
     paste0("Reptiles\n(n = ", sum(custom.clade == "Reptiles"), ")"),
     paste0("Others\n(n = ", sum(custom.clade == "Others"), ")")
   ), values = c("#e41a1c", "#377eb8", "#4daf4a", "#984ea3"))+
-  ggtitle(bquote(italic(r)^2~"vs Estimated Genome Size"))+
   theme(plot.title = element_text(hjust = 0.475),
+        plot.subtitle = element_text(hjust = 0.475), 
         axis.line = element_line(color = "black"),
         legend.title = element_blank(),
         legend.background = element_rect(fill = "#f2f2f2", color = "black", linewidth = 0.5),
@@ -47,7 +47,10 @@ ggplot(rsq.vs.k2p.mean, aes(x = k2p.mean, y = rsq, color = custom.clade)) +
   xlim(c(10, 26)) +
   ylim(c(0, 1))+
   geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed", linewidth = 0.5, fullrange = TRUE)+
-  labs(x = "Mean K2P Distance (subs per site)", y = bquote(italic(r)^2))
+  labs(title = bquote(italic(r)^2~"vs Estimated Genome Size"), 
+       # subtitle = bquote(y == .(slope) * x + .(intercept) * "," ~~ italic(r)^2 == .(fit.rsq) * "," ~~ italic(p) * "-value" == .(fit.pval)),
+       x = "Mean K2P Distance (subs per site)", 
+       y = bquote(italic(r)^2))
 ggsave(filename = "vert_rsq_vs_k2p_mean.jpg", 
        plot = last_plot(), 
        width = 7680, 

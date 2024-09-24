@@ -7,11 +7,11 @@ parsed.results <- read.csv(paste0("../results/", vert.invert, "/parsed_results.c
 species <- unique(parsed.results$species)
 rsq <- sapply(species, function(species) unique(parsed.results$species.rsquared[parsed.results$species == species]))
 rsq <- data.frame(rsq)
-vert.invert2 <- paste0(toupper(substr(vert.invert, 1, 1)), 
+vert.invert <- paste0(toupper(substr(vert.invert, 1, 1)), 
                        substr(vert.invert, 2, nchar(vert.invert) - 1))
 ggplot(rsq, aes(x = rsq)) +
   geom_histogram(bins = 10)+
-  ggtitle(bquote("Histogram of"~italic(r)^2~"Across All"~.(vert.invert2)~"Species")) +
+  ggtitle(bquote("Histogram of"~italic(r)^2~"Across All"~.(vert.invert)~"Species")) +
   theme(plot.title = element_text(hjust = 0.475),
         axis.line = element_line(color = "black"),
         panel.background = element_rect(fill = "white"),

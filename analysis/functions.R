@@ -3,9 +3,9 @@
 ## contig sizes of a species. gets the assembly size by summing the sizes of 
 ## all contigs except those identified by mitochondrial keywords. drops all but 
 ## the 2N longest contigs and outputs the results as a datatable
-dataFromFasta <- function(fasta.file.path, chromnum.1n, mito.keywords) {
+dataFromFasta <- function(fasta.file.path, chromnum.1n, mito.keywords, verbose) {
   # load fasta file as a vector
-  fasta <- fread(fasta.file.path, header = FALSE, showProgress = TRUE)$V1
+  fasta <- fread(fasta.file.path, header = FALSE, showProgress = verbose)$V1
   # get indices for the fasta vector
   contig.header.index <- which(grepl("^>", fasta))
   # get headers from fasta vector
@@ -33,9 +33,9 @@ dataFromFasta <- function(fasta.file.path, chromnum.1n, mito.keywords) {
 ## genes in the assembly by counting the number of rows in the gtf minus the
 ## rows with contig names that match the mitochondrial keywords. outputs the
 ## results as a datatable
-dataFromGtf <- function(gtf.file.path, contig.name, mito.keywords) {
+dataFromGtf <- function(gtf.file.path, contig.name, mito.keywords, verbose) {
   # read gtf
-  gtf <- fread(gtf.file.path, header = FALSE, showProgress = TRUE)
+  gtf <- fread(gtf.file.path, header = FALSE, showProgress = verbose)
   # filter for genes only
   gtf <- gtf[which(gtf[, 3] == "gene"), ]
   asmbly.gene.count <- nrow(gtf[!(gtf[[1]] %in% mito.keywords), ])
@@ -54,18 +54,18 @@ parseResults <- function(i) {
   # subset results for species
   table <- combined.results[combined.results$species == i, ]
   # drop contigs shorter than minContigSize
-  table2 <- table[table$contig.size_bp >= minContigSize, ]
+  table <- table[table$contig.size_bp >= minContigSize, ]
   # if the are more than 2 contigs, continue. otherwise drop the assembly
-  if (nrow(table2) > 2) {
+  if (nrow(table) > 2) {
     # calculate p-value
-    fit <- summary(lm(table2$contig.gene.count ~ table2$contig.size_bp))
+    fit <- summary(lm(table$contig.gene.count ~ table$contig.size_bp))
     species.pvalue <- fit$coefficients[2, 4]
     # if p-value is less than 0.05, continue. otherwise drop the assembly
     if (species.pvalue < 0.05) {
       # add p-value and adjusted r-squared to the results
       species.rsquared <- fit$adj.r.squared
-      table3 <- data.frame(table2, species.rsquared, species.pvalue)
-      return(table3)
+      table <- data.frame(table, species.rsquared, species.pvalue)
+      return(table)
     }
   }
 }
@@ -88,17 +88,17 @@ getK2pMean <- function(files) {
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, divsum.vector) + 1
   # condense the useful lines into a table
-  divsum.vector2 <- divsum.vector[start.index:length(divsum.vector)]
-  divsum.table <- read.table(textConnection(divsum.vector2), 
+  divsum.vector <- divsum.vector[start.index:length(divsum.vector)]
+  divsum.table <- read.table(textConnection(divsum.vector), 
                              sep = " ", 
                              header = TRUE)
   # drop NA columns
-  divsum.table2 <- divsum.table[
+  divsum.table <- divsum.table[
     -c(which(sapply(divsum.table, function(col) all(is.na(col)))))]
   # vector of divergence scores
   divergence <- divsum.table$Div
   # vector of the frequencies of each divergence score
-  frequency <- rowSums(divsum.table2[, !names(divsum.table2) == "Div"])
+  frequency <- rowSums(divsum.table[, !names(divsum.table) == "Div"])
   # calculate mean
   k2p.mean <- sum(divergence*frequency)/sum(frequency)
   return(k2p.mean)

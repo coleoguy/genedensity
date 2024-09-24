@@ -20,20 +20,23 @@ vert.invert <- "vertebrates"
 # verbose
 verbose <- FALSE
 
+
 library(data.table)
 source("functions.R")
 # load chromosome numbers
-chromnums.csv <- read.csv(paste0("../data/", vert.invert, "/chromnums.csv"))
+paste0("../data/", vert.invert, "/chromnums.csv")
+chromnums.table <- read.csv(paste0("../data/", vert.invert, "/chromnums.csv"))
 # keywords to match and exclude mitochondrial contigs for assembly size calcs
 mito.keywords <- c("mt", "mito", "mitochondrial", "nonchromosomal")
 # list genome files
 genome.files <- list.files(paste0("../data/", vert.invert, "/genomes"))
-# remove file extensions from genome file list
-all.species.underscore <- unique(gsub("\\..*$", "", genome.files))
-# remove underscores from genome file list to match for species chromnum csv file
-all.species <- gsub("_", " ", all.species.underscore)
-# TODO get list of all species with results
-# TODO subset all.species to just the ones that havent been run
+# pull species names from list of genome files
+all.species <- gsub("_", " ", unique(gsub("\\..*$", "", genome.files)))
+# list result files
+result.files <- list.files(
+  paste0("../results/", vert.invert, "/individual_species_results"))
+# pull species names from list of result files
+result.species <- gsub("_", " ", unique(gsub("\\..*$", "", result.files)))
 # begin loop
 for (species in all.species) {
   if (verbose == TRUE) {
@@ -42,35 +45,28 @@ for (species in all.species) {
     print(noquote(paste0(species, " (", Sys.time(), ")")))
   }
   # proceed if result file is not found, else go to next species
-  results.csv <- paste0("../results/", 
-                        vert.invert, 
-                        "/individual_species_results/", 
-                        gsub(" ", "_", species), 
-                        ".csv")
-  if (!file.exists(results.csv)) {
+  if (!(species %in% result.species)) {
     # get chromosome number
-    chromnum.1n <- chromnums.csv$chromnum.1n[chromnums.csv$species == species]
+    chromnum.1n <- chromnums.table$chromnum.1n[chromnums.table$species == species]
     # proceed if chromosme number is available, else go to next species
     if (!is.na(chromnum.1n)) {
-      fasta.file.path <- paste0("../data/", 
+      fa.gtf.file.path <- paste0("../data/", 
                                 vert.invert, 
                                 "/genomes/", 
                                 gsub(" ", "_", species), 
-                                ".fa")
-      gtf.file.path <- paste0("../data/", 
-                              vert.invert, 
-                              "/genomes/", 
-                              gsub(" ", "_", species), 
-                              ".gtf")
+                                c(".fa", ".gtf"))
+      fasta.file.path <- fa.gtf.file.path[1]
+      gtf.file.path <- fa.gtf.file.path[2]
       # read fasta
-      fasta.data <- dataFromFasta(fasta.file.path, chromnum.1n, mito.keywords)
+      fasta.data <- dataFromFasta(
+        fasta.file.path, chromnum.1n, mito.keywords, verbose)
       contig.name <- fasta.data$contig.name
       contig.size_bp <- fasta.data$contig.size_bp
       asmbly.size_bp <- fasta.data$asmbly.size_bp
       rm(fasta.data)
       gc()
       # read gtf
-      gtf.data <- dataFromGtf(gtf.file.path, contig.name, mito.keywords)
+      gtf.data <- dataFromGtf(gtf.file.path, contig.name, mito.keywords, verbose)
       contig.gene.count <- gtf.data$contig.gene.count
       asmbly.gene.count <- gtf.data$asmbly.gene.count
       rm(gtf.data)
@@ -89,26 +85,27 @@ for (species in all.species) {
         # calculate gene density
         contig.gene.dens_genes.per.bp <- dat$contig.gene.count/dat$contig.size_bp
         # add gene density to datatable
-        # TODO don't create a new variable just overwrite the version of dat
-        # TODO consider using the way we talked about dat$gene.density <- contig.gene.dens_genes.per.bp
-        dat2 <- data.table(
+        dat <- data.table(
           dat[, 1:4],
           contig.gene.dens_genes.per.bp,
           dat[, 5:6]
         )
         # write results
-        fwrite(dat2, file = results.csv, row.names = FALSE)
+        result.file <- paste0("../results/", 
+                              vert.invert, 
+                              "/individual_species_results/", 
+                              gsub(" ", "_", species), 
+                              ".csv")
+        fwrite(dat, file = result.file, row.names = FALSE)
         if (verbose == TRUE) {
           print(noquote("   Successfully written!"))
         }
       } else {
-        fwrite(data.table(), file = results.csv, row.names = FALSE)
         if (verbose == TRUE) {
-          print(noquote("   Aborted (sequence names in gtf and fasta do not match)"))
+          print(noquote("   Aborted (no genes that match contig names)"))
         }
       }
     } else {
-      fwrite(data.table(), file = results.csv, row.names = FALSE)
       if (verbose == TRUE) {
         print(noquote("   Aborted (no chromosome number estimate)"))
       }
