@@ -102,7 +102,7 @@ for (species in all.species) {
         }
       } else {
         if (verbose == TRUE) {
-          print(noquote("   Aborted (no genes that match contig names)"))
+          print(noquote("   Aborted (sequence names in gtf and fasta do not match)"))
         }
       }
     } else {
