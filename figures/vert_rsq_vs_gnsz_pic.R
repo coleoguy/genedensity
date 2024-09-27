@@ -1,34 +1,38 @@
 
 
 
-library(ggplot2)
-parsed.results <- read.csv("../results/vertebrates/parsed_results.csv")
+packages <- c("ape", "ggplot2")
+lapply(packages, library, character.only = TRUE)
+source("../analysis/functions.R")
 clades.gnsz <- read.csv("../data/vertebrates/clades_gnsz.csv")
-dat <- clades.gnsz[!is.na(clades.gnsz$genome.size.est_bp), ]
-dat <- dat[!is.na(dat$class), ]
-species <- dat$species
-table <- unique(data.frame(parsed.results$species, parsed.results$species.rsquared))
-table <- table[table[[1]] %in% species, ]
-rsq <- table[[2]]
-gnsz_bp <- dat$genome.size.est_bp
-gnsz_Gbp <- gnsz_bp / 1000000000
-class <- dat$class
+parsed.results <- read.csv("../results/vertebrates/parsed_results.csv")
+tree <- read.tree("../data/vertebrates/chordates_species.nwk")
+species <- unique(parsed.results$species)
+rsq <- as.numeric(lapply(species, getRsq))
+gnsz_Gbp <- getGnszEst(species) / 1000000000
+class <- getClass(species)
 custom.clade <- class
 custom.clade[custom.clade == "Actinopterygii"] <- "Ray-finned fish"
 custom.clade[custom.clade == "Aves"] <- "Reptiles"
 custom.clade[custom.clade == "Mammalia"] <- "Mammals"
 custom.clade[custom.clade == "Reptilia"] <- "Reptiles"
-other.clades <- !custom.clade %in% c("Ray-finned fish", "Reptiles", "Mammals")
-custom.clade[other.clades] <- "Others"
+others <- !(class %in% c("Actinopterygii", "Aves", "Mammalia", "Reptilia"))
 custom.clade <- factor(custom.clade, levels = c("Mammals", "Ray-finned fish", "Reptiles", "Others"))
-rsq.vs.gnsz <- data.frame(species, rsq, gnsz_Gbp, class, custom.clade)
-fit <- lm(rsq.vs.gnsz$rsq ~ rsq.vs.gnsz$gnsz_Gbp)
-slope <- signif(summary(fit)$coefficients[2, 1], 3)
-intercept <- signif(summary(fit)$coefficients[1, 1], 3)
-fit.pval <- signif(summary(fit)$coefficients[2, 4], 3)
-fit.rsq <- signif(summary(fit)$adj.r.squared, 3)
+custom.clade[which(others)] <- "Others"
+dat <- na.omit(data.frame(species, rsq, gnsz_Gbp, custom.clade))
+rsq.pic <- getPIC(dat[1:2], tree)
+gnsz.pic <- getPIC(dat[c(1, 3)], tree)
+rsq.vs.gnsz <- data.frame(
+  dat[dat$species %in% names(rsq.pic), ],
+  rsq.pic,
+  gnsz.pic)
+fit <- summary(lm(rsq.vs.gnsz$rsq.pic ~ rsq.vs.gnsz$gnsz.pic))
+slope <- signif(fit$coefficients[2, 1], 3)
+intercept <- signif(fit$coefficients[1, 1], 3)
+slope.pval <- signif(fit$coefficients[2, 4], 3)
+fit.rsq <- signif(fit$adj.r.squared, 3)
 
-ggplot(rsq.vs.gnsz, aes(x = gnsz_Gbp, y = rsq, color = custom.clade)) +
+ggplot(rsq.vs.gnsz, aes(x = gnsz.pic, y = rsq.pic, color = custom.clade)) +
   geom_point(shape = 16, alpha = 0.4, size = 2.3) +
   scale_color_manual(labels = c(
     paste0("Mammals\n(n = ", sum(rsq.vs.gnsz$custom.clade == "Mammals"), ")"),
@@ -43,18 +47,20 @@ ggplot(rsq.vs.gnsz, aes(x = gnsz_Gbp, y = rsq, color = custom.clade)) +
         legend.background = element_rect(fill = "#f2f2f2", color = "black", linewidth = 0.5),
         panel.background = element_rect(fill = "white"),
         panel.grid.major = element_line(color = "black", linetype = "dotted", size = 0.25),
-        legend.position = c(0.86, 0.69),
+        legend.position = c(0.84, 0.65),
         legend.key.size = unit(21, "points"))+
-  xlim(c(0, 6.8)) +
-  ylim(c(0.09, 1.02))+
+  xlim(c(-1.1, 1.4)) +
+  ylim(c(-0.28, 0.15))+
   geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed", linewidth = 0.5, fullrange = TRUE)+
-  labs(title = bquote(italic(r)^2~"vs Estimated Genome Size"), 
-       subtitle = bquote(italic(β) * "-coefficient" == .(slope) * "," ~~ italic(p) * "-value" == .(fit.pval) * "," ~~ italic(r)^2 == .(fit.rsq)),
-       x = "Estimated Genome Size (Gbp)", 
-       y = bquote(italic(r)^2))
-  ggsave(filename = "vert_rsq_vs_gnsz.jpg", 
+  labs(title = bquote("PIC(" * italic(r)^2 * ") vs PIC(Estimated Genome Size)"), 
+       subtitle = bquote(italic(β) * "-coefficient" == .(slope) * "," ~~ italic(p) * "-value" == .(slope.pval) * "," ~~ italic(r)^2 == .(fit.rsq)),
+       x = "PIC(Estimated Genome Size (Gbp))", 
+       y = bquote("PIC(" * italic(r)^2 * ")"))
+ggsave(filename = "vert_rsq_vs_gnsz_pic.jpg", 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 
        units = "px", 
        dpi = 1100)
+
+

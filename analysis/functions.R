@@ -105,7 +105,7 @@ getK2pMean <- function(files) {
 }
 
 ## Takes a vector of species, looks for each species in "parsed_results.csv",
-## and outputs a vector of r-squared values for each species
+## and outputs a vector containing r-squared values for each species
 getRsq <- function(species) {
   filter.names <- parsed.results$species == species
   if (any(filter.names)) {
@@ -117,7 +117,8 @@ getRsq <- function(species) {
 }
 
 ## Takes a vector of species, looks for each species in "clades_gnsz.csv",
-## and outputs a vector of class (taxonomy) assignments for each species
+## and outputs a vector containing class (taxonomy) assignments for each 
+## species
 getClass <- function(species) {
   filter.names <- clades.gnsz$species == species
   if (any(filter.names)) {
@@ -127,5 +128,33 @@ getClass <- function(species) {
     return(NA)
   }
 }
+
+
+## Takes a vector of species, looks for each species in "clades_gnsz.csv",
+## and outputs a vector containing estimated genome sizes for each species
+getGnszEst <- function(species) {
+  filter.names <- clades.gnsz$species == species
+  if (any(filter.names)) {
+    gnsz <- clades.gnsz$genome.size.est_bp[filter.names]
+    return(gnsz)
+  } else {
+    return(NA)
+  }
+}
+
+
+
+
+getPIC <- function(dataframe, tree){
+  sp.intersect <- intersect(tree$tip.label, gsub(" ", "_", dataframe$species))
+  dataframe <- dataframe[dataframe$species %in% gsub("_", " ", sp.intersect), ]
+  pruned.tree <- drop.tip(tree, tree$tip.label[!(tree$tip.label %in% sp.intersect)])
+  tree.species <- gsub("_", " ", pruned.tree$tip.label[-length(pruned.tree$tip.label)])
+  pic <- pic(dataframe[, 2], pruned.tree)
+  names(pic) <- tree.species
+  pic <- pic[order(names(pic))]
+  return(pic)
+}
+
 
 
