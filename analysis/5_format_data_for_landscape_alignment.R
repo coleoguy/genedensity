@@ -11,7 +11,7 @@ vert.invert <- "vertebrates"
 source("functions.R")
 parsed.results <- read.csv(
   paste0("../results/", vert.invert, "/parsed_results.csv"))
-clades.gnsz <- read.csv("../data/", vert.invert, "/clades_gnsz.csv")
+clades.gnsz <- read.csv(paste0("../data/", vert.invert, "/clades_gnsz.csv"))
 species <- clades.gnsz$species[!is.na(clades.gnsz$genome.size.est_bp)]
 family <- clades.gnsz$family[!is.na(clades.gnsz$genome.size.est_bp)]
 asmbly.size_bp <- sapply(species, getAsmblysz)

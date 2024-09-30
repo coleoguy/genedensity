@@ -35,7 +35,7 @@ dataFromFasta <- function(fasta.file.path, chromnum.1n, mito.keywords, verbose) 
 ## results as a datatable
 dataFromGtf <- function(gtf.file.path, contig.name, mito.keywords, verbose) {
   # read gtf
-  gtf <- fread(gtf.file.path, header = FALSE, showProgress = verbose)
+  gtf <- read.table(gtf.file.path, header = TRUE, sep = "\t")
   # filter for genes only
   gtf <- gtf[which(gtf[, 3] == "gene"), ]
   asmbly.gene.count <- nrow(gtf[!(gtf[[1]] %in% mito.keywords), ])

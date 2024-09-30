@@ -24,7 +24,6 @@ verbose <- FALSE
 library(data.table)
 source("functions.R")
 # load chromosome numbers
-paste0("../data/", vert.invert, "/chromnums.csv")
 chromnums.table <- read.csv(paste0("../data/", vert.invert, "/chromnums.csv"))
 # keywords to match and exclude mitochondrial contigs for assembly size calcs
 mito.keywords <- c("mt", "mito", "mitochondrial", "nonchromosomal")
@@ -50,11 +49,14 @@ for (species in all.species) {
     chromnum.1n <- chromnums.table$chromnum.1n[chromnums.table$species == species]
     # proceed if chromosme number is available, else go to next species
     if (!is.na(chromnum.1n)) {
-      fa.gtf.file.path <- paste0("../data/", 
+      list.files(paste0("../data/", vert.invert, "/genomes"), gsub(" ", "_", species))
+      fa.gtf.file.path <- sort(paste0("../data/", 
                                 vert.invert, 
                                 "/genomes/", 
-                                gsub(" ", "_", species), 
-                                c(".fa", ".gtf"))
+                                list.files(paste0("../data/", 
+                                                  vert.invert, 
+                                                  "/genomes"), 
+                                           gsub(" ", "_", species))))
       fasta.file.path <- fa.gtf.file.path[1]
       gtf.file.path <- fa.gtf.file.path[2]
       # read fasta
