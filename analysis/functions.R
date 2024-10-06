@@ -50,23 +50,20 @@ dataFromGtf <- function(gtf.file.path, contig.name, mito.keywords, verbose) {
 
 ## Takes a species as input. drop contigs shorter than 10 million bp. drops
 ## assemblies that have less than 3 contigs or with p-values less than 0.05
-parseResults <- function(i) {
+parseResults <- function(species, combined.results, min.contig.size) {
   # subset results for species
-  table <- combined.results[combined.results$species == i, ]
+  table <- combined.results[combined.results$species == species, ]
   # drop contigs shorter than minContigSize
-  table <- table[table$contig.size_bp >= minContigSize, ]
+  table <- table[table$contig.size_bp >= min.contig.size, ]
   # if the are more than 2 contigs, continue. otherwise drop the assembly
   if (nrow(table) > 2) {
     # calculate p-value
     fit <- summary(lm(table$contig.gene.count ~ table$contig.size_bp))
     species.pvalue <- fit$coefficients[2, 4]
-    # if p-value is less than 0.05, continue. otherwise drop the assembly
-    if (species.pvalue < 0.05) {
-      # add p-value and adjusted r-squared to the results
-      species.rsquared <- fit$adj.r.squared
-      table <- data.frame(table, species.rsquared, species.pvalue)
-      return(table)
-    }
+    # add p-value and adjusted r-squared to the results
+    species.rsquared <- fit$adj.r.squared
+    table <- data.frame(table, species.rsquared, species.pvalue)
+    return(table)
   }
 }
 
