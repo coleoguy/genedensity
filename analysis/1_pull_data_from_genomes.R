@@ -18,7 +18,7 @@
 # "vertebrates" or "invertebrates"?
 vert.invert <- "vertebrates"
 # verbose
-verbose <- FALSE
+verbose <- T
 
 
 library(data.table)
@@ -67,44 +67,44 @@ for (species in all.species) {
       asmbly.size_bp <- fasta.data$asmbly.size_bp
       rm(fasta.data)
       gc()
-      # read gtf
-      gtf.data <- dataFromGtf(gtf.file.path, contig.name, mito.keywords, verbose)
-      contig.gene.count <- gtf.data$contig.gene.count
-      asmbly.gene.count <- gtf.data$asmbly.gene.count
-      rm(gtf.data)
-      gc()
-      # assemble datatable
-      dat <- data.table(species,
-                        contig.name, 
-                        contig.size_bp, 
-                        contig.gene.count,
-                        asmbly.size_bp,
-                        asmbly.gene.count)
-      # drop contigs with less than 2 genes
-      dat <- dat[dat$contig.gene.count >= 2, ]
-      # proceed if data.table is not empty
-      if (nrow(dat) != 0) {
-        # calculate gene density
-        contig.gene.dens_genes.per.bp <- dat$contig.gene.count/dat$contig.size_bp
-        # add gene density to datatable
-        dat <- data.table(
-          dat[, 1:4],
-          contig.gene.dens_genes.per.bp,
-          dat[, 5:6]
-        )
-        # write results
-        result.file <- paste0("../results/", 
-                              vert.invert, 
-                              "/individual_species_results/", 
-                              gsub(" ", "_", species), 
-                              ".csv")
-        fwrite(dat, file = result.file, row.names = FALSE)
-        if (verbose == TRUE) {
-          print(noquote("   Successfully written!"))
+      if (length(contig.name) != 0) {
+        # read gtf
+        contig.gene.count <- dataFromGtf(gtf.file.path, contig.name, mito.keywords, verbose)
+        # proceed if gene count is available for more than one contig
+        if (sum(is.na(contig.gene.count)) < length(contig.name)) {
+          # assemble datatable
+          dat <- data.table(species,
+                            contig.name, 
+                            contig.size_bp, 
+                            contig.gene.count,
+                            asmbly.size_bp)
+          dat <- na.omit(dat)
+          # calculate gene density
+          contig.gene.dens_genes.per.bp <- dat$contig.gene.count/dat$contig.size_bp
+          # add gene density to datatable
+          dat <- data.table(
+            dat[, 1:4],
+            contig.gene.dens_genes.per.bp,
+            dat[, 5]
+          )
+          # write results
+          result.file <- paste0("../results/", 
+                                vert.invert, 
+                                "/individual_species_results/", 
+                                gsub(" ", "_", species), 
+                                ".csv")
+          fwrite(dat, file = result.file, row.names = FALSE)
+          if (verbose == TRUE) {
+            print(noquote("   Successfully written!"))
+          }
+        } else {
+          if (verbose == TRUE) {
+            print(noquote("   Aborted (sequence names in gtf and fasta do not match)"))
+          }
         }
       } else {
         if (verbose == TRUE) {
-          print(noquote("   Aborted (sequence names in gtf and fasta do not match)"))
+          print(noquote("   Aborted (no contigs found in FASTA)"))
         }
       }
     } else {
@@ -122,4 +122,6 @@ for (species in all.species) {
     print(noquote(paste0("   ", exec.time, " minutes")))
   }
 }
+
+
 

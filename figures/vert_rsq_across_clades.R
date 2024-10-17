@@ -3,46 +3,21 @@
 packages <- c("ape", "ggplot2", "ggbeeswarm")
 lapply(packages, library, character.only = TRUE)
 source("../analysis/functions.R")
-clades.gnsz <- read.csv("../data/vertebrates/clades_gnsz.csv")
-parsed.results <- read.csv("../results/vertebrates/parsed_results.csv")
-tree <- read.tree("../data/vertebrates/chordates_species.nwk")
-species <- unique(parsed.results$species)
-rsq <- as.numeric(lapply(species, getRsq))
-gnsz_Gbp <- getGnszEst(species) / 1000000000
-class <- getClass(species)
-custom.clade <- class
-custom.clade[custom.clade == "Actinopterygii"] <- "Ray-finned fish"
-custom.clade[custom.clade == "Aves"] <- "Reptiles"
-custom.clade[custom.clade == "Mammalia"] <- "Mammals"
-custom.clade[custom.clade == "Reptilia"] <- "Reptiles"
-others <- !(class %in% c("Actinopterygii", "Aves", "Mammalia", "Reptilia"))
-custom.clade <- factor(custom.clade, levels = c("Mammals", "Ray-finned fish", "Reptiles", "Others"))
-custom.clade[which(others)] <- "Others"
-dat <- na.omit(data.frame(species, rsq, custom.clade))
-rsq.pic <- getPIC(dat[1:2], tree)
-rsq.clades <- data.frame(
-  dat[dat$species %in% intersect(dat$species, names(rsq.pic)), ],
-  rsq.pic)
-rsq.clades <- rsq.clades[!(rsq.clades$custom.clade %in% "Others"), ]
-num.mammals <- length(which(rsq.clades$custom.clade == "Mammals"))
-num.fish <- length(which(rsq.clades$custom.clade == "Ray-finned fish"))
-num.reptiles <- length(which(rsq.clades$custom.clade == "Reptiles"))
-anova <- aov(rsq.clades$rsq ~ rsq.clades$custom.clade)
-aov.result <- summary(anova)[[1]][1, 5]
-if (aov.result < 0.05) {
-  tukey <- TukeyHSD(anova)
-}
-
-ggplot(rsq.clades, aes(x = custom.clade, y = rsq, fill = custom.clade)) +
+dat <- read.csv("../data/vertebrates/chromnum_clade_gnsz_rsq.csv")
+dat <- dat[dat$clade %in% c("Mammalia", "Actinopterygii", "Sauria"), ]
+num.mammals <- sum(dat$clade == "Mammalia")
+num.fish <- sum(dat$clade == "Actinopterygii")
+num.reptiles <- sum(dat$clade == "Sauria")
+ggplot(dat, aes(x = clade, y = rsq, fill = clade)) +
   ggtitle(bquote(italic(r)^2 * "Across Clades"))+
   theme(plot.title = element_text(hjust = 0.45), 
         axis.line = element_line(color = "black"),
         panel.background = element_rect(fill = "white"),
         scale_fill_manual(values = c("#e41a1c", "#377eb8", "#4daf4a")),
         panel.grid.major = element_line(color = "black", linetype = "dotted", size = 0.25))+
-  scale_x_discrete(labels = c("Mammals" = bquote("Mammals"~~(n==.(num.mammals))), 
-                              "Ray-finned fish" = bquote("Ray-finned fish"~~(n==.(num.fish))), 
-                              "Reptiles" = bquote("Reptiles"~~(n==.(num.reptiles))))) +
+  scale_x_discrete(labels = c("Mammalia" = bquote("Mammals"~~(n==.(num.mammals))), 
+                              "Actinopterygii" = bquote("Ray-finned fish"~~(n==.(num.fish))), 
+                              "Sauria" = bquote("Reptiles"~~(n==.(num.reptiles))))) +
   labs(x = "", 
        y = bquote(italic(r)^2)) +
   guides(fill = "none") +

@@ -14,12 +14,11 @@ dataFromFasta <- function(fasta.file.path, chromnum.1n, mito.keywords, verbose) 
   contig.size_bp <- as.numeric(sub(".*:([0-9]+):1 REF", "\\1", contig.header))
   # get contig names from each header
   contig.name <- sub(">\\s*([^ ]+).*", "\\1", contig.header)
+  # get assembly size from all contigs excluding mitochondrial
+  mito.indices <- which(!tolower(contig.name) %in% mito.keywords)
+  asmbly.size_bp <- sum(na.omit(contig.size_bp[mito.indices]))
   # create table
-  fasta.data <- data.table(contig.name, contig.size_bp)
-  # create new column with assembly sizes
-  mito.indices <- which(!tolower(fasta.data$contig.name) %in% mito.keywords)
-  asmbly.size_bp <- sum(fasta.data$contig.size_bp[mito.indices])
-  fasta.data <- data.table(fasta.data, asmbly.size_bp)
+  fasta.data <- data.table(contig.name, contig.size_bp, asmbly.size_bp)
   # sort by size
   fasta.data <- fasta.data[order(fasta.data$contig.size_bp, decreasing = TRUE), ]
   # Keep large contigs
@@ -38,14 +37,10 @@ dataFromGtf <- function(gtf.file.path, contig.name, mito.keywords, verbose) {
   gtf <- read.table(gtf.file.path, header = TRUE, sep = "\t")
   # filter for genes only
   gtf <- gtf[which(gtf[, 3] == "gene"), ]
-  asmbly.gene.count <- nrow(gtf[!(gtf[[1]] %in% mito.keywords), ])
-  # make table
-  geneFreqTable <- table(gtf[[1]])
   # get the number of genes in each contig
   contig.gene.count <- sapply(
     contig.name, function(contig.name) table(gtf[[1]])[contig.name])
-  gtf.data <- data.table(contig.gene.count, asmbly.gene.count)
-  return(gtf.data)
+  return(contig.gene.count)
 }
 
 ## Takes a species as input. drop contigs shorter than 10 million bp. drops
@@ -61,7 +56,7 @@ parseResults <- function(species, combined.results, min.contig.size) {
     fit <- summary(lm(table$contig.gene.count ~ table$contig.size_bp))
     species.pvalue <- fit$coefficients[2, 4]
     # add p-value and adjusted r-squared to the results
-    species.rsquared <- fit$adj.r.squared
+    species.rsquared <- fit$r.squared
     table <- data.frame(table, species.rsquared, species.pvalue)
     return(table)
   }
@@ -143,12 +138,25 @@ getGnszEst <- function(species) {
 
 
 getPIC <- function(dataframe, tree){
-  sp.intersect <- intersect(tree$tip.label, gsub(" ", "_", dataframe$species))
-  dataframe <- dataframe[dataframe$species %in% gsub("_", " ", sp.intersect), ]
+  # species in dataframe
+  sp <- dataframe$species
+  # format dataframe species names to match tree tip labels
+  spf <- sub("^([^_]*_[^_]*)_.*", "\\1", gsub(" ", "_", sp))
+  # find intersection in dataframe and tree species
+  sp.intersect <- intersect(tree$tip.label, spf)
+  # prune tree
   pruned.tree <- drop.tip(tree, tree$tip.label[!(tree$tip.label %in% sp.intersect)])
-  tree.species <- gsub("_", " ", pruned.tree$tip.label[-length(pruned.tree$tip.label)])
+  # pruned tree tip labels in the format of the original dataframe
+  spn <- sp[match(spf[match(pruned.tree$tip.label, spf)], spf)]
+  # subset of dataframe containing intersection species
+  dataframe <- dataframe[dataframe$species %in% spn, ]
+  # reorder dataframe to match tree tip labels
+  dataframe <- dataframe[match(spn, dataframe$species), ]
+  # perform PIC on trait
   pic <- pic(dataframe[, 2], pruned.tree)
-  names(pic) <- tree.species
+  # name results
+  names(pic) <- spn[-length(spn)]
+  # sort results
   pic <- pic[order(names(pic))]
   return(pic)
 }
