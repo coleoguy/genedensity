@@ -52,34 +52,21 @@ parseResults <- function(species, combined.results, min.contig.size) {
   table <- table[table$contig.size_bp >= min.contig.size, ]
   # if the are more than 2 contigs, continue. otherwise drop the assembly
   if (nrow(table) > 2) {
-    # calculate p-value
-    fit <- summary(lm(table$contig.gene.count ~ table$contig.size_bp))
-    species.pvalue <- fit$coefficients[2, 4]
-    # add p-value and adjusted r-squared to the results
-    species.rsquared <- fit$r.squared
-    table <- data.frame(table, species.rsquared, species.pvalue)
     return(table)
   }
-}
-
-## Takes a vector of species, looks for each species in "parsed_results.csv",
-## and outputs a vector of assembly sizes for each species
-getAsmblysz <- function(species) {
-  return(as.numeric(unique(
-    parsed.results$asmbly.size_bp[parsed.results$species == species])))
 }
 
 ## Takes a character vector of divsum files as an input. reads each file and
 ## calculates the mean K2P distance. outputs the mean K2P distance of each
 ## species as a dataframe
-getK2pMean <- function(files) {
+getRepLandscapeStats <- function(files, asmbly.sz) {
   # read text file into lines
   divsum.vector <- readLines(
-    paste0("../results/", vert.invert, "/repeat_landscape/", files))
-  # look for the start of useful information
+    paste0("../results/", vert.invert, "/repeat_landscape_divsums/", files))
+  # look for the start of relevant information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, divsum.vector) + 1
-  # condense the useful lines into a table
+  # condense relevant lines into a table
   divsum.vector <- divsum.vector[start.index:length(divsum.vector)]
   divsum.table <- read.table(textConnection(divsum.vector), 
                              sep = " ", 
@@ -91,9 +78,29 @@ getK2pMean <- function(files) {
   divergence <- divsum.table$Div
   # vector of the frequencies of each divergence score
   frequency <- rowSums(divsum.table[, !names(divsum.table) == "Div"])
+  # repeat content in bp
+  rep.content_bp <- sum(frequency)
+  # calculate median
+  k2p.median <- median(frequency)
   # calculate mean
   k2p.mean <- sum(divergence*frequency)/sum(frequency)
-  return(k2p.mean)
+  # species name, all lowercase with underscore
+  sp.under <- gsub("_summary\\.divsum$", "", files)
+  # species name, uppercase genus with underscore
+  sp.under <- sub("^(\\w)", "\\U\\1", sp.under, perl = TRUE)
+  # species name, uppercase genus without underscore
+  species <- gsub("_", " ", sp.under)
+  # assembly size
+  asmbly.sz <- asmbly.sz$asmbly.size_bp[asmbly.sz$species == species]
+  # repeat content in percent coverage
+  rep.content_percent.of.assembly <- (rep.content_bp / asmbly.sz) * 100
+  # build dataframe
+  dat <- data.frame(species, 
+                    rep.content_bp,
+                    rep.content_percent.of.assembly, 
+                    k2p.mean, 
+                    k2p.median)
+  return(dat)
 }
 
 ## Takes a vector of species, looks for each species in "parsed_results.csv",
@@ -162,4 +169,13 @@ getPIC <- function(dataframe, tree){
 }
 
 
-
+getContigStats <- function(species, results) {
+  cursp <- results[results$species == species, ]
+  fit <- summary(lm(cursp$contig.size_bp ~ cursp$contig.gene.count))
+  beta <- fit$coefficients[2, 1]
+  pval.beta <- fit$coefficients[2, 4]
+  rsq <- fit$r.squared
+  coef.of.var <-sd(cursp$contig.gene.dens_genes.per.bp) / mean(cursp$contig.gene.dens_genes.per.bp)
+  contig.stats <- data.frame(beta, pval.beta, rsq, coef.of.var)
+  return(contig.stats)
+}
