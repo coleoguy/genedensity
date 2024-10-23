@@ -59,7 +59,7 @@ parseResults <- function(species, combined.results, min.contig.size) {
 ## Takes a character vector of divsum files as an input. reads each file and
 ## calculates the mean K2P distance. outputs the mean K2P distance of each
 ## species as a dataframe
-getRepLandscapeStats <- function(files, asmbly.sz) {
+calcRepLandscapeStats <- function(files, asmbly.sz, vert.invert) {
   # read text file into lines
   divsum.vector <- readLines(
     paste0("../results/", vert.invert, "/repeat_landscape_divsums/", files))
@@ -80,8 +80,16 @@ getRepLandscapeStats <- function(files, asmbly.sz) {
   frequency <- rowSums(divsum.table[, !names(divsum.table) == "Div"])
   # repeat content in bp
   rep.content_bp <- sum(frequency)
-  # calculate median
-  k2p.median <- median(frequency)
+  # the bin that contains the median
+  median.bin <- which(cumsum(frequency) > sum(frequency)/2)[1]
+  # frequency of the previous bin
+  lower <- cumsum(frequency)[median.bin-1]
+  # frequency of the next bin
+  upper <- cumsum(frequency)[median.bin+1]
+  # median frequency
+  mid <- sum(frequency)/2
+  # median bin
+  k2p.median <- median.bin + (mid-lower)/(upper-lower)
   # calculate mean
   k2p.mean <- sum(divergence*frequency)/sum(frequency)
   # species name, all lowercase with underscore
@@ -103,70 +111,6 @@ getRepLandscapeStats <- function(files, asmbly.sz) {
   return(dat)
 }
 
-## Takes a vector of species, looks for each species in "parsed_results.csv",
-## and outputs a vector containing r-squared values for each species
-getRsq <- function(species) {
-  filter.names <- parsed.results$species == species
-  if (any(filter.names)) {
-    rsq <- unique(parsed.results$species.rsquared[filter.names])
-    return(rsq)
-  } else {
-    return(NA)
-  }
-}
-
-## Takes a vector of species, looks for each species in "clades_gnsz.csv",
-## and outputs a vector containing class (taxonomy) assignments for each 
-## species
-getClass <- function(species) {
-  filter.names <- clades.gnsz$species == species
-  if (any(filter.names)) {
-    class <- clades.gnsz$class[filter.names]
-    return(class)
-  } else {
-    return(NA)
-  }
-}
-
-
-## Takes a vector of species, looks for each species in "clades_gnsz.csv",
-## and outputs a vector containing estimated genome sizes for each species
-getGnszEst <- function(species) {
-  filter.names <- clades.gnsz$species == species
-  if (any(filter.names)) {
-    gnsz <- clades.gnsz$genome.size.est_bp[filter.names]
-    return(gnsz)
-  } else {
-    return(NA)
-  }
-}
-
-
-
-
-getPIC <- function(dataframe, tree){
-  # species in dataframe
-  sp <- dataframe$species
-  # format dataframe species names to match tree tip labels
-  spf <- sub("^([^_]*_[^_]*)_.*", "\\1", gsub(" ", "_", sp))
-  # find intersection in dataframe and tree species
-  sp.intersect <- intersect(tree$tip.label, spf)
-  # prune tree
-  pruned.tree <- drop.tip(tree, tree$tip.label[!(tree$tip.label %in% sp.intersect)])
-  # pruned tree tip labels in the format of the original dataframe
-  spn <- sp[match(spf[match(pruned.tree$tip.label, spf)], spf)]
-  # subset of dataframe containing intersection species
-  dataframe <- dataframe[dataframe$species %in% spn, ]
-  # reorder dataframe to match tree tip labels
-  dataframe <- dataframe[match(spn, dataframe$species), ]
-  # perform PIC on trait
-  pic <- pic(dataframe[, 2], pruned.tree)
-  # name results
-  names(pic) <- spn[-length(spn)]
-  # sort results
-  pic <- pic[order(names(pic))]
-  return(pic)
-}
 
 
 getContigStats <- function(species, results) {
@@ -178,4 +122,12 @@ getContigStats <- function(species, results) {
   coef.of.var <-sd(cursp$contig.gene.dens_genes.per.bp) / mean(cursp$contig.gene.dens_genes.per.bp)
   contig.stats <- data.frame(beta, pval.beta, rsq, coef.of.var)
   return(contig.stats)
+}
+
+
+calcPic <- function(col, species, tree) {
+  df <- data.frame(species, col)
+  df <- df[order(df$species, tree$tip.label), ]
+  pic <- pic(df$col, phy = tree)
+  return(pic)
 }

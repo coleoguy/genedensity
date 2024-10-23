@@ -11,9 +11,12 @@ files <- list.files(paste0("../results/",
                            vert.invert, 
                            "/repeat_landscape_divsums"))
 asmbly.sz <- read.csv(paste0("../results/", vert.invert, "/assembly_sizes.csv"))
+
+
 rep.landsc.stats <- do.call(rbind, lapply(files, 
-                                          getRepLandscapeStats, 
-                                          asmbly.sz = asmbly.sz))
+                                          calcRepLandscapeStats, 
+                                          asmbly.sz = asmbly.sz, 
+                                          vert.invert = vert.invert))
 write.csv(rep.landsc.stats, 
           paste0("../results/", vert.invert, "/rep_landscape_stats.csv"), 
           row.names = FALSE)

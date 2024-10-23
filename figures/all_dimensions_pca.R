@@ -2,7 +2,7 @@
 
 
 
-vert.invert <- "vertebrates"
+vert.invert <- "invertebrates"
 
 
 # list packages
