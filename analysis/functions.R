@@ -113,9 +113,9 @@ calcRepLandscapeStats <- function(files, asmbly.sz, vert.invert) {
 
 
 
-getContigStats <- function(species, results) {
+calcContigStats <- function(species, results) {
   cursp <- results[results$species == species, ]
-  fit <- summary(lm(cursp$contig.size_bp ~ cursp$contig.gene.count))
+  fit <- summary(lm(cursp$contig.gene.count ~ cursp$contig.size_bp))
   beta <- fit$coefficients[2, 1]
   pval.beta <- fit$coefficients[2, 4]
   rsq <- fit$r.squared
@@ -130,4 +130,11 @@ calcPic <- function(col, species, tree) {
   df <- df[order(df$species, tree$tip.label), ]
   pic <- pic(df$col, phy = tree)
   return(pic)
+}
+
+permTest <- function(x, y, reps, method) {
+  permuted.y <- replicate(reps, sample(y))
+  permuted.cor <- apply(permuted.y, MARGIN = 2, function(col) cor(x, col, method = method))
+  pval <- mean(abs(permuted.cor) >= abs(cor(x, y, method = method)))
+  return(pval)
 }

@@ -20,7 +20,7 @@ all.contigs.results <- read.csv(paste0("../results/",
 species <- unique(all.contigs.results$species)
 # calculate stats
 contig.stats <- do.call(rbind, lapply(species, 
-                                      getContigStats, 
+                                      calcContigStats, 
                                       results = all.contigs.results))
 # add species to stats dataframe
 contig.stats <- data.frame(species, contig.stats)

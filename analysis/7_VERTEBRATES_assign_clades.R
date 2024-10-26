@@ -6,9 +6,6 @@
 # Description: pulls the vertebrate clades Actinopteryii, Mammalia, and Sauria
 # from class names
 
-# "vertebrates" or "invertebrates"?
-vert.invert <- "vertebrates"
-
 # list of classes that will be covered by clade assignments
 major.classes <- c("Actinopterygii", "Aves", "Mammalia", "Reptilia")
 # read in data file

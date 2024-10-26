@@ -11,7 +11,7 @@ tree <- read.tree(paste0("../data/", vert.invert, "/pruned_tree.nwk"))
 tree$tip.label <- gsub("_", " ", tree$tip.label)
 
 # gather and subset relevant results
-dat <- na.omit(final.results[, c("species", "rsq", "k2p.mean", "clade")])
+dat <- na.omit(final.results[, c("species", "rep.content_percent.of.assembly", "chromnum.1n", "clade")])
 sp.intersect <- intersect(dat$species, tree$tip.label)
 dat <- dat[dat$species %in% sp.intersect, ]
 
@@ -19,7 +19,7 @@ dat <- dat[dat$species %in% sp.intersect, ]
 pruned.tree <- keep.tip(tree, sp.intersect)
 
 # create PGLS object for trendline
-pgls.model <- gls(rsq ~ k2p.mean, 
+pgls.model <- gls(rep.content_percent.of.assembly ~ chromnum.1n, 
                   data = dat, 
                   correlation = corBrownian(phy = pruned.tree, form = ~species),
                   method = "ML")
@@ -28,15 +28,15 @@ intercept <- signif(summary$tTable[1, 1], 3)
 slope <- signif(summary$tTable[2, 1], 3)
 
 # calculate PICs for spearman rank correlation hypothesis test
-y <- pic(setNames(dat$rsq, dat$species), pruned.tree)
-x <- pic(setNames(dat$k2p.mean, dat$species), pruned.tree)
+y <- pic(setNames(dat$rep.content_percent.of.assembly, dat$species), pruned.tree)
+x <- pic(setNames(dat$chromnum.1n, dat$species), pruned.tree)
 pval <- signif(permTest(x, y, 100000, "pearson"), 3)
 
 # set factors for figure legend
 dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauria", "Others"))
 
 # graph
-ggplot(dat, aes(x = k2p.mean, y = rsq, color = clade)) +
+ggplot(dat, aes(x = chromnum.1n, y = rep.content_percent.of.assembly, color = clade)) +
   geom_point(shape = 16, alpha = 0.4, size = 2.3) +
   scale_color_manual(labels = c(
     paste0("Mammals\n(n = ", sum(dat$clade == "Mammalia"), ")"),
@@ -53,14 +53,12 @@ ggplot(dat, aes(x = k2p.mean, y = rsq, color = clade)) +
         panel.grid.major = element_line(color = "black", linetype = "dotted", size = 0.25),
         legend.position = c(0.86, 0.69),
         legend.key.size = unit(21, "points"))+
-  xlim(c(10, 26)) +
-  ylim(c(0, 1))+
   geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed", linewidth = 0.5, fullrange = TRUE)+
-  labs(title = bquote(italic(r)^2~"vs Mean Divergence"), 
+  labs(title = bquote("Repeat Content vs Chromosome Number"), 
        subtitle = bquote(italic(β) * "-coefficient" == .(slope) * "," ~~ "permutation test" ~ italic(p) * "-value" == .(pval)),
-       x = "Mean K2P Divergence", 
-       y = bquote(italic(r)^2))
-ggsave(filename = paste0("rsq_k2pmean_scatter_pgls_", vert.invert, ".jpg"), 
+       x = "Haploid Chromosome Number", 
+       y = bquote("Repeat Content (% coverage)"))
+ggsave(filename = paste0("repcontent_chromnum_scatter_pgls_", vert.invert, ".jpg"), 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 
