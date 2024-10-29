@@ -27,7 +27,7 @@ summary <- summary(pgls.model)
 intercept <- signif(summary$tTable[1, 1], 3)
 slope <- signif(summary$tTable[2, 1], 3)
 
-# calculate PICs for spearman rank correlation hypothesis test
+# calculate PICs for permutation test of pearson correlation coefficient
 y <- pic(setNames(dat$rep.content_percent.of.assembly, dat$species), pruned.tree)
 x <- pic(setNames(dat$chromnum.1n, dat$species), pruned.tree)
 pval <- signif(permTest(x, y, 100000, "pearson"), 3)
