@@ -6,7 +6,7 @@
 ## file contains species name, family, and assembly size
 
 # "vertebrates" or "invertebrates"?
-vert.invert <- "vertebrates"
+vert.invert <- "invertebrates"
 assembly.sizes <- read.csv(
   paste0("../results/", vert.invert, "/assembly_sizes.csv"))
 taxo.gnsz <- read.csv(paste0("../data/", vert.invert, "/taxo_gnsz.csv"))

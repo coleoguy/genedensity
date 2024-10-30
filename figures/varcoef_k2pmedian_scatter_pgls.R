@@ -11,7 +11,7 @@ tree <- read.tree(paste0("../data/", vert.invert, "/pruned_tree.nwk"))
 tree$tip.label <- gsub("_", " ", tree$tip.label)
 
 # gather and subset relevant results
-dat <- na.omit(final.results[, c("species", "coef.of.var", "k2p.mean", "clade")])
+dat <- na.omit(final.results[, c("species", "coef.of.var", "k2p.median", "clade")])
 sp.intersect <- intersect(dat$species, tree$tip.label)
 dat <- dat[dat$species %in% sp.intersect, ]
 
@@ -19,7 +19,7 @@ dat <- dat[dat$species %in% sp.intersect, ]
 pruned.tree <- keep.tip(tree, sp.intersect)
 
 # create PGLS object for trendline
-pgls.model <- gls(coef.of.var ~ k2p.mean, 
+pgls.model <- gls(coef.of.var ~ k2p.median, 
                   data = dat, 
                   correlation = corBrownian(phy = pruned.tree, form = ~species),
                   method = "ML")
@@ -29,14 +29,14 @@ slope <- signif(summary$tTable[2, 1], 3)
 
 # calculate PICs for permutation test of pearson correlation coefficient
 y <- pic(setNames(dat$coef.of.var, dat$species), pruned.tree)
-x <- pic(setNames(dat$k2p.mean, dat$species), pruned.tree)
-pval <- signif(permTest(x, y, 100000, "pearson"), 3)
+x <- pic(setNames(dat$k2p.median, dat$species), pruned.tree)
+pval <- signif(permTest(x, y, 1000000, "pearson"), 3)
 
 # set factors for figure legend
 dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauria", "Others"))
 
 # graph
-ggplot(dat, aes(x = k2p.mean, y = coef.of.var, color = clade)) +
+ggplot(dat, aes(x = k2p.median, y = coef.of.var, color = clade)) +
   geom_point(shape = 16, alpha = 0.4, size = 2.3) +
   scale_color_manual(labels = c(
     paste0("Mammals\n(n = ", sum(dat$clade == "Mammalia"), ")"),
@@ -55,11 +55,11 @@ ggplot(dat, aes(x = k2p.mean, y = coef.of.var, color = clade)) +
         legend.key.size = unit(21, "points"))+
   geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed", linewidth = 0.5, fullrange = TRUE)+
   xlim(c(5, 30)) +
-  labs(title = bquote("Coefficient of Variance vs Mean Divergence"), 
+  labs(title = bquote("Coefficient of Variance vs Median Divergence"), 
        subtitle = bquote(italic(β) * "-coefficient" == .(slope) * "," ~~ "permutation test" ~ italic(p) * "-value" == .(pval)),
-       x = "Mean K2P Divergence", 
-       y = bquote("Coefficient of Variance"))
-ggsave(filename = paste0("varcoef_k2pmean_scatter_pgls_", vert.invert, ".jpg"), 
+       x = "Median K2P Divergence", 
+       y = bquote("Coefficient of Variation"))
+ggsave(filename = paste0("varcoef_k2pmedian_scatter_pgls_", vert.invert, ".jpg"), 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 

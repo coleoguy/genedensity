@@ -115,10 +115,10 @@ calcRepLandscapeStats <- function(files, asmbly.sz, vert.invert) {
 
 calcContigStats <- function(species, results) {
   cursp <- results[results$species == species, ]
-  fit <- summary(lm(cursp$contig.gene.count ~ cursp$contig.size_bp))
+  fit <- summary(glm(cursp$contig.gene.count ~ cursp$contig.size_bp))
   beta <- fit$coefficients[2, 1]
   pval.beta <- fit$coefficients[2, 4]
-  rsq <- fit$r.squared
+  rsq <- summary(lm(cursp$contig.gene.count ~ cursp$contig.size_bp))$r.squared
   coef.of.var <-sd(cursp$contig.gene.dens_genes.per.bp) / mean(cursp$contig.gene.dens_genes.per.bp)
   contig.stats <- data.frame(beta, pval.beta, rsq, coef.of.var)
   return(contig.stats)
