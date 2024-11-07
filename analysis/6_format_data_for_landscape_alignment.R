@@ -7,15 +7,22 @@
 
 # "vertebrates" or "invertebrates"?
 vert.invert <- "invertebrates"
-assembly.sizes <- read.csv(
-  paste0("../results/", vert.invert, "/assembly_sizes.csv"))
-taxo.gnsz <- read.csv(paste0("../data/", vert.invert, "/taxo_gnsz.csv"))
-taxo.gnsz <- taxo.gnsz[, c("species", "family", "est.gnsz_bp")]
-results <- merge(taxo.gnsz, assembly.sizes, by = "species", all.x = TRUE)
-results$species <- tolower(gsub(" ", "_", results$species))
-results <- na.omit(results)
+
+results <- read.csv(paste0("../data/", vert.invert, "/taxo_gnsz.csv"))
+# get species with genome size estimates
+results <- results[!is.na(results$est.gnsz.Mbp), ]
+# subset for species and family
+results <- results[, c("species", "family")]
+# format species name
+results$species <- na.omit(gsub(" ", "_", results$species))
+# look for analyzed species
+sp.analyzed <- list.files(paste0("../results/", vert.invert, "/repeat_landscape_divsums"))
+# remove file extenison
+sp.analyzed <- gsub(".divsum$", "", sp.analyzed)
+# drop analyzed species
+results <- results[!(results$species %in% sp.analyzed), ]
 write.table(results, 
-            paste0("../data/", vert.invert, "/species_family_asmblysz.csv"), 
+            paste0("../data/", vert.invert, "/landsc_ref.csv"), 
             sep = ",", 
             col.names = FALSE, 
             row.names = FALSE,

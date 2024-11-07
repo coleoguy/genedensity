@@ -7,17 +7,13 @@
 # "vertebrates" or "invertebrates"?
 vert.invert <- "invertebrates"
 # verbose
-verbose <- T
+verbose <- F
 
-asmbly.sz <- read.csv(paste0("../results/", vert.invert, "/assembly_sizes.csv"))
+asmblysz <- read.csv(paste0("../results/", vert.invert, "/assembly_sizes.csv"))
 files <- list.files(paste0("../results/", vert.invert, "/repeat_landscape_divsums"))
 for (file in files) {
-  # species name, all lowercase with underscore
-  sp.under <- gsub("_summary\\.divsum$", "", file)
-  # species name, uppercase genus with underscore
-  sp.under <- sub("^(\\w)", "\\U\\1", sp.under, perl = TRUE)
-  # species name, uppercase genus without underscore
-  species <- gsub("_", " ", sp.under)
+  # species name
+  species <- gsub("_", " ", gsub(".divsum$", "", file))
   if (verbose == TRUE) {
     start.time <- Sys.time()
     gc()
@@ -79,20 +75,20 @@ for (file in files) {
   # format repeat divergence for plotting
   divergence <- rep(results.table$Div, length(colnames(results.table))-1)
   # get sequence lengths from the table as a vector
-  sequence.lengths_bp <- as.numeric(unlist(results.table[-c(1)]))
+  sequence.lengths.Mbp <- as.numeric(unlist(results.table[-c(1)])) / 1000000
   # find the assembly size of the species
-  gnsz_bp <- asmbly.sz$asmbly.size_bp[asmbly.sz$species == species]
+  gnsz.Mbp <- asmblysz$asmbly.size.Mbp[asmblysz$species == species]
   # calculate the percentage of the genome for repeats in each repeat class and divergence
-  percent.of.genome <- sequence.lengths_bp / gnsz_bp * 100
+  percent.of.genome <- sequence.lengths.Mbp / gnsz.Mbp * 100
   # format repeat classes for plotting
   repeat.group <- as.character(
     sapply(colnames(results.table)[colnames(results.table) != "Div"], 
            function(rowname) rep(rowname, length(results.table$Div))))
   # assemble dataframe for plotting
-  final <- data.frame(species, divergence, sequence.lengths_bp, percent.of.genome, repeat.group)
+  final <- data.frame(species, divergence, sequence.lengths.Mbp, percent.of.genome, repeat.group)
   write.csv(final, 
             paste0("../results/vertebrates/repeat_landscape_plotting/", 
-                   sp.under, 
+                   gsub(" ", "_", species), 
                    ".csv"),
             row.names = FALSE)
   if (verbose == TRUE) {

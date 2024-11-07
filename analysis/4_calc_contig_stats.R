@@ -10,20 +10,26 @@
 # "vertebrates" or "invertebrates"
 vert.invert <- "invertebrates"
 
-# source functions
-source("functions.R")
 # read results
-all.contigs.results <- read.csv(paste0("../results/", 
-                                       vert.invert, 
-                                       "/all_contigs_results.csv"))
-# list species in results
-species <- unique(all.contigs.results$species)
-# calculate stats
-contig.stats <- do.call(rbind, lapply(species, 
-                                      calcContigStats, 
-                                      results = all.contigs.results))
-# add species to stats dataframe
-contig.stats <- data.frame(species, contig.stats)
+input <- read.csv(paste0("../results/", 
+                           vert.invert, 
+                           "/all_contigs_results.csv"))
+all.species <- unique(input$species)
+
+contig.stats <- data.frame()
+for (species in all.species) {
+  sub <- input[input$species == species, ]
+  fit <- summary(glm(sub$contig.gene.count ~ sub$contig.size.Mbp))
+  beta <- fit$coefficients[2, 1]
+  pval.beta <- fit$coefficients[2, 4]
+  rsq <- summary(lm(sub$contig.gene.count ~ sub$contig.size.Mbp))$r.squared
+  cv <- sd(sub$contig.genedens.geneperMbp) / mean(sub$contig.genedens.geneperMbp)
+  weightmean <- sum(sub$contig.genedens.geneperMbp * sub$contig.size.Mbp) / sum(sub$contig.size.Mbp)
+  weightsd <- sqrt(sum(sub$contig.size.Mbp * (sub$contig.genedens.geneperMbp - weightmean)^2) / sum(sub$contig.size.Mbp))
+  weightcv <- weightsd / weightmean
+  contig.stats <- rbind(contig.stats, data.frame(species, beta, pval.beta, rsq, cv, weightcv))
+}
+
 # write csv
 write.csv(contig.stats, 
           paste0("../results/", vert.invert, "/contig_stats.csv"), 

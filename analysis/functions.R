@@ -3,24 +3,24 @@
 ## contig sizes of a species. gets the assembly size by summing the sizes of 
 ## all contigs except those identified by mitochondrial keywords. drops all but 
 ## the 2N longest contigs and outputs the results as a datatable
-dataFromFasta <- function(fasta.file.path, chromnum.1n, mito.keywords, verbose) {
+dataFromFasta <- function(fasta.path, chromnum.1n, mito.keywords, verbose) {
   # load fasta file as a vector
-  fasta <- fread(fasta.file.path, header = FALSE, showProgress = verbose)$V1
+  fasta <- fread(fasta.path, header = FALSE, showProgress = verbose)$V1
   # get indices for the fasta vector
-  contig.header.index <- which(grepl("^>", fasta))
+  header.ind <- which(grepl("^>", fasta))
   # get headers from fasta vector
-  contig.header <- fasta[contig.header.index]
+  header <- fasta[header.ind]
   # get contig sizes from each header
-  contig.size_bp <- as.numeric(sub(".*:([0-9]+):1 REF", "\\1", contig.header))
+  contig.size.Mbp <- as.numeric(sub(".*:([0-9]+):1 REF", "\\1", header)) / 1000000
   # get contig names from each header
-  contig.name <- sub(">\\s*([^ ]+).*", "\\1", contig.header)
+  contig.name <- sub(">\\s*([^ ]+).*", "\\1", header)
   # get assembly size from all contigs excluding mitochondrial
   mito.indices <- which(!tolower(contig.name) %in% mito.keywords)
-  asmbly.size_bp <- sum(na.omit(contig.size_bp[mito.indices]))
+  asmbly.size.Mbp <- sum(na.omit(contig.size.Mbp[mito.indices]))
   # create table
-  fasta.data <- data.table(contig.name, contig.size_bp, asmbly.size_bp)
+  fasta.data <- data.table(contig.name, contig.size.Mbp, asmbly.size.Mbp)
   # sort by size
-  fasta.data <- fasta.data[order(fasta.data$contig.size_bp, decreasing = TRUE), ]
+  fasta.data <- fasta.data[order(fasta.data$contig.size.Mbp, decreasing = TRUE), ]
   # Keep large contigs
   fasta.data <- head(fasta.data, 2 * chromnum.1n)
   return(fasta.data)
@@ -43,26 +43,14 @@ dataFromGtf <- function(gtf.file.path, contig.name, mito.keywords, verbose) {
   return(contig.gene.count)
 }
 
-## Takes a species as input. drop contigs shorter than 10 million bp. drops
-## assemblies that have less than 3 contigs or with p-values less than 0.05
-parseResults <- function(species, combined.results, min.contig.size) {
-  # subset results for species
-  table <- combined.results[combined.results$species == species, ]
-  # drop contigs shorter than minContigSize
-  table <- table[table$contig.size_bp >= min.contig.size, ]
-  # if the are more than 2 contigs, continue. otherwise drop the assembly
-  if (nrow(table) > 2) {
-    return(table)
-  }
-}
 
 ## Takes a character vector of divsum files as an input. reads each file and
 ## calculates the mean K2P distance. outputs the mean K2P distance of each
 ## species as a dataframe
-calcRepLandscapeStats <- function(files, asmbly.sz, vert.invert) {
+calcRepLandscStats <- function(species, file, asmblysz.Mbp, vert.invert) {
   # read text file into lines
   divsum.vector <- readLines(
-    paste0("../results/", vert.invert, "/repeat_landscape_divsums/", files))
+    paste0("../results/", vert.invert, "/repeat_landscape_divsums/", file))
   # look for the start of relevant information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, divsum.vector) + 1
@@ -78,8 +66,8 @@ calcRepLandscapeStats <- function(files, asmbly.sz, vert.invert) {
   divergence <- divsum.table$Div
   # vector of the frequencies of each divergence score
   frequency <- rowSums(divsum.table[, !names(divsum.table) == "Div"])
-  # repeat content in bp
-  rep.content_bp <- sum(frequency)
+  # repeat content in Mbp
+  repcontent.Mbp <- sum(frequency) / 1000000
   # the bin that contains the median
   median.bin <- which(cumsum(frequency) > sum(frequency)/2)[1]
   # frequency of the previous bin
@@ -92,36 +80,15 @@ calcRepLandscapeStats <- function(files, asmbly.sz, vert.invert) {
   k2p.median <- median.bin + (mid-lower)/(upper-lower)
   # calculate mean
   k2p.mean <- sum(divergence*frequency)/sum(frequency)
-  # species name, all lowercase with underscore
-  sp.under <- gsub("_summary\\.divsum$", "", files)
-  # species name, uppercase genus with underscore
-  sp.under <- sub("^(\\w)", "\\U\\1", sp.under, perl = TRUE)
-  # species name, uppercase genus without underscore
-  species <- gsub("_", " ", sp.under)
-  # assembly size
-  asmbly.sz <- asmbly.sz$asmbly.size_bp[asmbly.sz$species == species]
   # repeat content in percent coverage
-  rep.content_percent.of.assembly <- (rep.content_bp / asmbly.sz) * 100
+  repcontent.percentcoverage <- (repcontent.Mbp / asmblysz.Mbp) * 100
   # build dataframe
-  dat <- data.frame(species, 
-                    rep.content_bp,
-                    rep.content_percent.of.assembly, 
-                    k2p.mean, 
-                    k2p.median)
-  return(dat)
-}
-
-
-
-calcContigStats <- function(species, results) {
-  cursp <- results[results$species == species, ]
-  fit <- summary(glm(cursp$contig.gene.count ~ cursp$contig.size_bp))
-  beta <- fit$coefficients[2, 1]
-  pval.beta <- fit$coefficients[2, 4]
-  rsq <- summary(lm(cursp$contig.gene.count ~ cursp$contig.size_bp))$r.squared
-  coef.of.var <-sd(cursp$contig.gene.dens_genes.per.bp) / mean(cursp$contig.gene.dens_genes.per.bp)
-  contig.stats <- data.frame(beta, pval.beta, rsq, coef.of.var)
-  return(contig.stats)
+  df <- data.frame(species, 
+           repcontent.Mbp,
+           repcontent.percentcoverage, 
+           k2p.mean, 
+           k2p.median)
+  return(df)
 }
 
 

@@ -9,21 +9,21 @@
 vert.invert <- "invertebrates"
 
 taxo.gnsz.csv <- paste0("../data/", vert.invert, "/taxo_gnsz.csv")
-all.contigs.results <- read.csv(paste0("../results/", vert.invert, "/all_contigs_results.csv"))
-species <- unique(all.contigs.results$species)
+input <- read.csv(paste0("../results/", vert.invert, "/all_contigs_results.csv"))
+species <- unique(input$species)
 # if data file doesn't exist, create new file. else append to existing file
 if (!file.exists(taxo.gnsz.csv)) {
   class <- NA
   order <- NA
   family <- NA
-  est.gnsz_bp <- NA
+  est.gnsz.Mbp <- NA
   est.gnsz.source <- NA
   est.gnsz.db <- NA
   data.sheet <- data.frame(species, 
                           class, 
                           order, 
                           family, 
-                          est.gnsz_bp, 
+                          est.gnsz.Mbp, 
                           est.gnsz.source,
                           est.gnsz.db)
   write.csv(data.sheet, taxo.gnsz.csv, row.names = FALSE)

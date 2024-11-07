@@ -9,8 +9,12 @@ vert.invert <- "vertebrates"
 packages <- c("ggplot2", "ggrepel")
 # load packages
 lapply(packages, library, character.only = TRUE)
-# pic loadings
-loadings <- read.csv(paste0("../results/", vert.invert, "/final_results_pic_loadings.csv"), row.names = 1)
+# pics
+pics <- read.csv(paste0("../results/", vert.invert, "/final_results_pics.csv"))
+# pca results
+pca_result <- prcomp(pics, center = TRUE, scale. = TRUE)
+# pca loadings
+loadings <- as.data.frame(pca_result$rotation)
 # Create biplot
 ggplot(loadings, aes(x = PC1, y = PC2)) +
   # vectors

@@ -9,26 +9,30 @@
 
 # "vertebrates" or "invertebrates"?
 vert.invert <- "invertebrates"
-# all contigs shorter than this size will be dropped
-min.contig.size <- 10000000
 
 # source functions
 source("functions.R")
 # contig results for each species
-combined.results <- read.csv(paste0("../results/", vert.invert, "/combined_results.csv"))
+results <- read.csv(paste0("../results/", vert.invert, "/combined_results.csv"))
 # unique species in results
-species <- unique(combined.results$species)
+species <- unique(results$species)
+
+parsed <- data.frame()
 # parse results
-results <- do.call(rbind, lapply(species, 
-                                 parseResults, 
-                                 combined.results = combined.results, 
-                                 min.contig.size = min.contig.size))
+for (i in species) {
+  sub <- results[results$species == i, ]
+  sub <- sub[sub$contig.size.Mbp > 10, ]
+  if (nrow(sub) >= 3) {
+    parsed <- rbind(parsed, sub)
+  }
+}
+
 # write csv with parsed results
-write.csv(results[1:5], 
+write.csv(parsed[1:5], 
           paste0("../results/", vert.invert, "/all_contigs_results.csv"), 
           row.names = FALSE)
 # assembly sizes
-asmbly.size <- unique(results[c(1, 6)])
+asmbly.size <- unique(parsed[c(1, 6)])
 # write csv with assembly sizes
 write.csv(asmbly.size, 
           paste0("../results/", vert.invert, "/assembly_sizes.csv"), 

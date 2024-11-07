@@ -7,11 +7,12 @@ packages <- c("ape", "ggplot2", "nlme")
 lapply(packages, library, character.only = TRUE)
 source("../analysis/functions.R")
 final.results <- read.csv(paste0("../results/", vert.invert, "/final_results.csv"))
-tree <- read.tree(paste0("../data/", vert.invert, "/pruned_tree.nwk"))
+tree <- read.tree(paste0("../data/", vert.invert, "/formatted_tree.nwk"))
 tree$tip.label <- gsub("_", " ", tree$tip.label)
 
 # gather and subset relevant results
-dat <- na.omit(final.results[, c("species", "rep.content_percent.of.assembly", "chromnum.1n", "clade")])
+dat <- na.omit(final.results[, c("species", "beta", "repcontent.percentcoverage", "clade")])
+dat$beta <- dat$beta
 sp.intersect <- intersect(dat$species, tree$tip.label)
 dat <- dat[dat$species %in% sp.intersect, ]
 
@@ -19,24 +20,25 @@ dat <- dat[dat$species %in% sp.intersect, ]
 pruned.tree <- keep.tip(tree, sp.intersect)
 
 # create PGLS object for trendline
-pgls.model <- gls(rep.content_percent.of.assembly ~ chromnum.1n, 
+pgls.model <- gls(beta ~ repcontent.percentcoverage, 
                   data = dat, 
                   correlation = corBrownian(phy = pruned.tree, form = ~species),
                   method = "ML")
 summary <- summary(pgls.model)
 intercept <- signif(summary$tTable[1, 1], 3)
 slope <- signif(summary$tTable[2, 1], 3)
+slope.pval <- signif(summary$tTable[2, 4], 3)
 
 # calculate PICs for permutation test of pearson correlation coefficient
-y <- pic(setNames(dat$rep.content_percent.of.assembly, dat$species), pruned.tree)
-x <- pic(setNames(dat$chromnum.1n, dat$species), pruned.tree)
-pval <- signif(permTest(x, y, 1000000, "pearson"), 3)
+y <- pic(setNames(dat$beta, dat$species), pruned.tree)
+x <- pic(setNames(dat$repcontent.percentcoverage, dat$species), pruned.tree)
+perm.pval <- signif(permTest(x, y, 1000000, "pearson"), 3)
 
 # set factors for figure legend
 dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauria", "Others"))
 
 # graph
-ggplot(dat, aes(x = chromnum.1n, y = rep.content_percent.of.assembly, color = clade)) +
+ggplot(dat, aes(x = repcontent.percentcoverage, y = beta, color = clade)) +
   geom_point(shape = 16, alpha = 0.4, size = 2.3) +
   scale_color_manual(labels = c(
     paste0("Mammals\n(n = ", sum(dat$clade == "Mammalia"), ")"),
@@ -53,12 +55,12 @@ ggplot(dat, aes(x = chromnum.1n, y = rep.content_percent.of.assembly, color = cl
         panel.grid.major = element_line(color = "black", linetype = "dotted", size = 0.25),
         legend.position = c(0.86, 0.69),
         legend.key.size = unit(21, "points"))+
-  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed", linewidth = 0.5, fullrange = TRUE)+
-  labs(title = bquote("Repeat Content vs Chromosome Number"), 
-       subtitle = bquote(italic(β) * "-coefficient" == .(slope) * "," ~~ "permutation test" ~ italic(p) * "-value" == .(pval)),
-       x = "Haploid Chromosome Number", 
-       y = bquote("Repeat Content (% coverage)"))
-ggsave(filename = paste0("repcontent_chromnum_scatter_pgls_", vert.invert, ".jpg"), 
+  geom_abline(intercept = intercept, slope = slope, color = "black", linetype = "dashed", linewidth = 0.5) +
+  labs(title = bquote(italic(β)~"vs Repeat Content"), 
+       subtitle = bquote(italic(β) * "-coefficient" == .(slope) * "," ~~ italic(β) ~ italic(p) * "-value" == .(slope.pval) * "," ~~ "permutation" ~ italic(p) * "-value" == .(perm.pval)),
+       x = "Repeat Content (% coverage)", 
+       y = bquote(italic(β) ~ "(genes per Mbp)"))
+ggsave(filename = paste0("beta_repcontent_scatter_", vert.invert, ".jpg"), 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 

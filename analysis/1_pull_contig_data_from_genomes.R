@@ -28,18 +28,18 @@ library(data.table)
 # source function
 source("functions.R")
 # load chromosome numbers
-chromnums.table <- read.csv(paste0("../data/", vert.invert, "/chromnums.csv"))
+chromnums <- read.csv(paste0("../data/", vert.invert, "/chromnums.csv"))
 # list genome files
 genome.files <- list.files(paste0("../data/", vert.invert, "/genomes"))
 # pull species names from list of genome files
 all.species <- gsub("_", " ", unique(gsub("\\..*$", "", genome.files)))
 # list result files
-result.files <- list.files(
+results <- list.files(
   paste0("../results/", vert.invert, "/individual_species_results"))
 # pull species names from list of result files
-result.species <- gsub("_", " ", unique(gsub("\\..*$", "", result.files)))
+result.species <- gsub("_", " ", unique(gsub("\\..*$", "", results)))
 # begin loop
-for (species in all.species) {
+for (species in all.species[231:262]) {
   if (verbose == TRUE) {
     start.time <- Sys.time()
     gc()
@@ -48,79 +48,72 @@ for (species in all.species) {
   # proceed if result file is not found, else go to next species
   if (!(species %in% result.species)) {
     # get chromosome number
-    chromnum.1n <- chromnums.table$chromnum.1n[chromnums.table$species == species]
+    chromnum.1n <- chromnums$chromnum.1n[chromnums$species == species]
     # proceed if chromosme number is available, else go to next species
-    if (!is.na(chromnum.1n)) {
-      # list files corresponding to the current species name (there shoule be two)
-      list.files(paste0("../data/", vert.invert, "/genomes"), gsub(" ", "_", species))
-      # create full paths for the previous files. sort alphabetically to place
-      # the fasta file in front of the gff3/gtf file
-      fa.gtf.file.path <- sort(paste0("../data/", 
+    if (is.na(chromnum.1n)) {
+      chromnum.1n <- 25
+    }
+    # create full paths for files. sort alphabetically to place
+    # the fasta file in front of the gff3/gtf file
+    genome.files <- sort(paste0("../data/", 
                                 vert.invert, 
                                 "/genomes/", 
                                 list.files(paste0("../data/", 
                                                   vert.invert, 
                                                   "/genomes"), 
                                            gsub(" ", "_", species))))
-      # assume the first file to be the fasta
-      fasta.file.path <- fa.gtf.file.path[1]
-      # assume the second file to be the gtf/gff3
-      gtf.file.path <- fa.gtf.file.path[2]
-      # read fasta
-      fasta.data <- dataFromFasta(
-        fasta.file.path, chromnum.1n, mito.keywords, verbose)
-      contig.name <- fasta.data$contig.name
-      contig.size_bp <- fasta.data$contig.size_bp
-      asmbly.size_bp <- fasta.data$asmbly.size_bp
-      rm(fasta.data)
-      gc()
-      if (length(contig.name) != 0) {
-        # read gtf/gff3
-        contig.gene.count <- dataFromGtf(gtf.file.path, contig.name, mito.keywords, verbose)
-        # proceed if gene count is available for more than one contig
-        if (sum(is.na(contig.gene.count)) < length(contig.name)) {
-          # assemble datatable
-          dat <- data.table(species,
-                            contig.name, 
-                            contig.size_bp, 
-                            contig.gene.count,
-                            asmbly.size_bp)
-          dat <- na.omit(dat)
-          # calculate gene density
-          contig.gene.dens_genes.per.bp <- dat$contig.gene.count/dat$contig.size_bp
-          # add gene density to datatable
-          dat <- data.table(
-            dat[, 1:4],
-            contig.gene.dens_genes.per.bp,
-            dat[, 5]
-          )
-          # write results
-          result.file <- paste0("../results/", 
-                                vert.invert, 
-                                "/individual_species_results/", 
-                                gsub(" ", "_", species), 
-                                ".csv")
-          fwrite(dat, file = result.file, row.names = FALSE)
-          if (verbose == TRUE) {
-            print(noquote("   Successfully written!"))
-          }
-        } else {
-          # prompt to be displayed when sequence names in fasta and annotation 
-          # files do not match
-          if (verbose == TRUE) {
-            print(noquote("   Aborted (sequence names in gtf/gff3 and fasta do not match)"))
-          }
+    # assume the first file to be the fasta
+    fasta.path <- genome.files[1]
+    # assume the second file to be the gtf/gff3
+    gtf.path <- genome.files[2]
+    # read fasta
+    fasta.data <- dataFromFasta(
+      fasta.path, chromnum.1n, mito.keywords, verbose)
+    contig.name <- fasta.data$contig.name
+    contig.size.Mbp <- fasta.data$contig.size.Mbp
+    asmbly.size.Mbp <- unique(fasta.data$asmbly.size.Mbp)
+    rm(fasta.data)
+    gc()
+    if (length(contig.name) != 0) {
+      # read gtf/gff3
+      contig.gene.count <- dataFromGtf(gtf.path, contig.name, mito.keywords, verbose)
+      # proceed if gene count is available for more than one contig
+      if (sum(is.na(contig.gene.count)) < length(contig.name)) {
+        # assemble datatable
+        dat <- data.table(species,
+                          contig.name, 
+                          contig.size.Mbp, 
+                          contig.gene.count)
+        dat <- na.omit(dat)
+        # calculate gene density
+        contig.genedens.geneperMbp <- dat$contig.gene.count/dat$contig.size.Mbp
+        # add gene density to datatable
+        dat <- data.table(
+          dat,
+          contig.genedens.geneperMbp,
+          asmbly.size.Mbp
+        )
+        # write results
+        result.path <- paste0("../results/", 
+                              vert.invert, 
+                              "/individual_species_results/", 
+                              gsub(" ", "_", species), 
+                              ".csv")
+        fwrite(dat, file = result.path, row.names = FALSE)
+        if (verbose == TRUE) {
+          print(noquote("   Successfully written!"))
         }
       } else {
-        # prompt to be displayed when no contigs are found in the fasta file
+        # prompt to be displayed when sequence names in fasta and annotation 
+        # files do not match
         if (verbose == TRUE) {
-          print(noquote("   Aborted (no contigs found in FASTA)"))
+          print(noquote("   Aborted (sequence names in gtf/gff3 and fasta do not match)"))
         }
       }
     } else {
-      # prompt to be displayed when chromosome numbers are unavailable
+      # prompt to be displayed when no contigs are found in the fasta file
       if (verbose == TRUE) {
-        print(noquote("   Aborted (no chromosome number)"))
+        print(noquote("   Aborted (no contigs found in FASTA)"))
       }
     }
   } else {
@@ -134,8 +127,5 @@ for (species in all.species) {
     print(noquote(paste0("   ", exec.time, " minutes")))
   }
 }
-write.csv(chromnums.table, 
-          paste0("../results/", vert.invert, "/final_results.csv"),
-          row.names = FALSE)
 
 

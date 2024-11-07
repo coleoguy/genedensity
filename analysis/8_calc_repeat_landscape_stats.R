@@ -10,13 +10,29 @@ source("functions.R")
 files <- list.files(paste0("../results/", 
                            vert.invert, 
                            "/repeat_landscape_divsums"))
-asmbly.sz <- read.csv(paste0("../results/", vert.invert, "/assembly_sizes.csv"))
 
+# species name
+species <- gsub("_", " ", gsub(".divsum$", "", files))
 
-rep.landsc.stats <- do.call(rbind, lapply(files, 
-                                          calcRepLandscapeStats, 
-                                          asmbly.sz = asmbly.sz, 
-                                          vert.invert = vert.invert))
-write.csv(rep.landsc.stats, 
+asmblysz <- read.csv(paste0("../results/", vert.invert, "/assembly_sizes.csv"))
+asmblysz <- asmblysz[asmblysz$species %in% species, ]
+asmblysz <- asmblysz[order(asmblysz$species == species), ]
+
+dat <- data.frame(asmblysz, files)
+
+replandsc.stats <- data.frame()
+
+for (i in dat$species) {
+  file <- dat[dat$species == i, ]$files
+  asmblysz.Mbp <- dat[dat$species == i, ]$asmbly.size.Mbp
+  result <- lapply(i, 
+                  calcRepLandscStats, 
+                  file = file,
+                  asmblysz.Mbp = asmblysz.Mbp,
+                  vert.invert = vert.invert)[[1]]
+  replandsc.stats <- rbind(replandsc.stats, result)
+}
+
+write.csv(replandsc.stats, 
           paste0("../results/", vert.invert, "/rep_landscape_stats.csv"), 
           row.names = FALSE)
