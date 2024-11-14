@@ -6,7 +6,7 @@
 ## analyzed, appends the new species to the existing csv without overwriting.
 
 # "vertebrates" or "invertebrates"?
-vert.invert <- "invertebrates"
+vert.invert <- "vertebrates"
 
 taxo.gnsz.csv <- paste0("../data/", vert.invert, "/taxo_gnsz.csv")
 input <- read.csv(paste0("../results/", vert.invert, "/all_contigs_results.csv"))

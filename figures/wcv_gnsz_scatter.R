@@ -12,7 +12,8 @@ tree <- read.tree(paste0("../data/", vert.invert, "/formatted_tree.nwk"))
 tree$tip.label <- gsub("_", " ", tree$tip.label)
 
 # gather and subset relevant results
-dat <- na.omit(final.results[, c("species", "cv", "est.gnsz.Mbp", "clade")])
+final.results <- final.results[!is.na(final.results$chromnum.1n), ]
+dat <- na.omit(final.results[, c("species", "weightcv", "est.gnsz.Mbp", "clade")])
 sp.intersect <- intersect(dat$species, tree$tip.label)
 dat <- dat[dat$species %in% sp.intersect, ]
 
@@ -20,10 +21,10 @@ dat <- dat[dat$species %in% sp.intersect, ]
 pruned.tree <- keep.tip(tree, sp.intersect)
 
 # convert bp to gbp
-dat$est.gnsz_Gbp <- dat$est.gnsz.Mbp / 100
+dat$est.gnsz_Gbp <- dat$est.gnsz.Mbp / 1000
 
 # create PGLS object for trendline
-pgls.model <- gls(cv ~ est.gnsz_Gbp, 
+pgls.model <- gls(weightcv ~ est.gnsz_Gbp, 
                   data = dat, 
                   correlation = corBrownian(phy = pruned.tree, form = ~species),
                   method = "ML")
@@ -33,15 +34,16 @@ slope <- signif(summary$tTable[2, 1], 3)
 slope.pval <- signif(summary$tTable[2, 4], 3)
 
 # calculate PICs for permutation test of pearson correlation coefficient
-y <- pic(setNames(dat$cv, dat$species), pruned.tree)
+y <- pic(setNames(dat$weightcv, dat$species), pruned.tree)
 x <- pic(setNames(dat$est.gnsz.Mbp, dat$species), pruned.tree)
-perm.pval <- signif(permTest(x, y, 1000000, "pearson"), 3)
+r <- signif(cor(x, y, method = "pearson"), 3)
+perm.pval <- signif(permTest(x, y, 100000, "pearson"), 3)
 
 # set factors for figure legend
 dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauria", "Others"))
 
 # graph
-ggplot(dat, aes(x = est.gnsz_Gbp, y = cv, color = clade)) +
+ggplot(dat, aes(x = est.gnsz_Gbp, y = weightcv, color = clade)) +
   geom_point(shape = 16, alpha = 0.4, size = 2.3) +
   scale_color_manual(labels = c(
     paste0("Mammals\n(n = ", sum(dat$clade == "Mammalia"), ")"),
@@ -59,11 +61,12 @@ ggplot(dat, aes(x = est.gnsz_Gbp, y = cv, color = clade)) +
         legend.position = c(0.87, 0.75),
         legend.key.size = unit(21, "points"))+
   geom_abline(intercept = intercept, slope = slope, color = "black", linetype = "dashed", linewidth = 0.5) +
-  labs(title = bquote(italic(r)^2 ~ "vs Estimated Genome Size"), 
-       subtitle = bquote(italic(β) * "-coefficient" == .(slope) * "," ~~ italic(β) ~ italic(p) * "-value" == .(slope.pval) * "," ~~ "permutation" ~ italic(p) * "-value" == .(perm.pval)),
+  xlim(c(0, 7.5)) +
+  labs(title = bquote("Weighted CV vs Estimated Genome Size"), 
+       subtitle = bquote(italic(β) == .(slope) * "," ~~ italic(β) ~ italic(p) * "-value" == .(slope.pval) * "," ~~ italic(r) == .(r) * "," ~~ "permutation" ~ italic(p) * "-value" == .(perm.pval)),
        x = "Estimated Genome Size (Gbp)", 
-       y = bquote("Coefficient of Variation"))
-ggsave(filename = paste0("cv_gnsz_scatter_", vert.invert, ".jpg"), 
+       y = bquote("Weighted CV"))
+ggsave(filename = paste0("wcv_gnsz_scatter_", vert.invert, ".jpg"), 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 

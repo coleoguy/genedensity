@@ -2,7 +2,7 @@
 
 
 
-vert.invert <- "invertebrates"
+vert.invert <- "vertebrates"
 
 # load library
 library(ape)
@@ -12,6 +12,8 @@ source("functions.R")
 tree <- read.tree(paste0("../data/", vert.invert, "/formatted_tree.nwk"))
 # load in results
 final.results <- read.csv(paste0("../results/", vert.invert, "/final_results.csv"))
+# final results filter
+final.results <- final.results[!is.na(final.results$chromnum.1n), ]
 # rename results as species
 rownames(final.results) <- final.results$species
 # remove non-numeric data

@@ -8,7 +8,7 @@
 # calculate slope, p-value of slope, r-squared, and coefficient of varience
 
 # "vertebrates" or "invertebrates"
-vert.invert <- "invertebrates"
+vert.invert <- "vertebrates"
 
 # read results
 input <- read.csv(paste0("../results/", 

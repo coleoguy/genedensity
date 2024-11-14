@@ -8,7 +8,7 @@
 ## assemblies with less than 3 contigs. 
 
 # "vertebrates" or "invertebrates"?
-vert.invert <- "invertebrates"
+vert.invert <- "vertebrates"
 
 # source functions
 source("functions.R")

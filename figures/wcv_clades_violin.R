@@ -7,7 +7,8 @@ vert.invert <- "vertebrates"
 packages <- c("ggplot2", "ggbeeswarm")
 lapply(packages, library, character.only = TRUE)
 final.results <- read.csv(paste0("../results/", vert.invert, "/final_results.csv"))
-dat <- final.results[, c("species", "cv", "clade")]
+final.results <- final.results[!is.na(final.results$chromnum.1n), ]
+dat <- final.results[, c("species", "weightcv", "clade")]
 dat <- na.omit(dat[dat$clade != "Others", ])
 num.mammals <- sum(dat$clade == "Mammalia")
 num.fish <- sum(dat$clade == "Actinopterygii")
@@ -17,13 +18,13 @@ num.reptiles <- sum(dat$clade == "Sauria")
 dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauria"))
 
 
-aov <- aov(cv ~ clade, data = dat)
+aov <- aov(weightcv ~ clade, data = dat)
 anova <- summary(aov)[[1]][1, 5]
 if (anova < 0.05) {
   tukey <- TukeyHSD(aov)$clade
 }
 
-ggplot(dat, aes(x = clade, y = cv, fill = clade)) +
+ggplot(dat, aes(x = clade, y = weightcv, fill = clade)) +
   ggtitle(bquote("Coefficient of Variation Across Clades"))+
   theme(plot.title = element_text(hjust = 0.45), 
         axis.line = element_line(color = "black"),
@@ -38,9 +39,9 @@ ggplot(dat, aes(x = clade, y = cv, fill = clade)) +
   guides(fill = "none") +
   geom_violin() +
   geom_boxplot(width = 0.05, outliers = FALSE) +
-  ylim(c(0, 0.75)) +
+  ylim(c(0.04, 0.76)) +
   geom_beeswarm(shape = 16, size = 1.5, cex = 1.75, alpha = 0.4, fill = "black", color = "black")
-ggsave(filename = paste0("cv_clades_violin_", vert.invert, ".jpg"), 
+ggsave(filename = paste0("wcv_clades_violin_", vert.invert, ".jpg"), 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 

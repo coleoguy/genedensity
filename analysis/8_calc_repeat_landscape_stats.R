@@ -4,7 +4,7 @@
 # Description: calculates repeat content, k
 
 # "vertebrates" or "invertebrates"
-vert.invert <- "invertebrates"
+vert.invert <- "vertebrates"
 
 source("functions.R")
 files <- list.files(paste0("../results/", 
@@ -36,3 +36,22 @@ for (i in dat$species) {
 write.csv(replandsc.stats, 
           paste0("../results/", vert.invert, "/rep_landscape_stats.csv"), 
           row.names = FALSE)
+
+
+
+
+
+
+
+
+
+######### ignore stuff below
+library(pracma)
+
+all_peaks <- findpeaks(frequency)
+all_mins <- findpeaks(-frequency)
+all_mins[, 1] <- -all_mins[, 1]
+plot(frequency, type = 'l', main = "Frequency Data with Detected Peaks/Mins", 
+     xlab = "Index", ylab = "Amplitude")
+points(all_peaks[, 2], frequency[all_peaks[, 2]], col = "red", pch = 19)
+points(all_mins[, 2], all_mins[, 1], col = "blue", pch = 19)

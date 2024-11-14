@@ -7,7 +7,7 @@
 # description: combines the files in the results folder into a single .csv file
 
 # "vertebrates" or "invertebrates"?
-vert.invert <- "invertebrates"
+vert.invert <- "vertebrates"
 
 # load package
 library(data.table)

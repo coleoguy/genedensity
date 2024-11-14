@@ -4,7 +4,7 @@
 # Description: combines all results into a single csv file for plotting
 
 # "vertebrates" or "invertebrates"?
-vert.invert <- "invertebrates"
+vert.invert <- "vertebrates"
 
 chromnums <- read.csv(paste0("../data/", vert.invert, "/chromnums.csv"))
 assembly.sizes <- read.csv(paste0("../results/", vert.invert, "/assembly_sizes.csv"))

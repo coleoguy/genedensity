@@ -6,7 +6,7 @@
 ## file contains species name, family, and assembly size
 
 # "vertebrates" or "invertebrates"?
-vert.invert <- "invertebrates"
+vert.invert <- "vertebrates"
 
 results <- read.csv(paste0("../data/", vert.invert, "/taxo_gnsz.csv"))
 # get species with genome size estimates

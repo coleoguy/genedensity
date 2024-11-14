@@ -5,7 +5,7 @@
 # coverage for each repeat class and divergence for use in plotting
 
 # "vertebrates" or "invertebrates"?
-vert.invert <- "invertebrates"
+vert.invert <- "vertebrates"
 # verbose
 verbose <- F
 

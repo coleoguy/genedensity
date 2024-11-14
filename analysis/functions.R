@@ -82,6 +82,7 @@ calcRepLandscStats <- function(species, file, asmblysz.Mbp, vert.invert) {
   k2p.mean <- sum(divergence*frequency)/sum(frequency)
   # repeat content in percent coverage
   repcontent.percentcoverage <- (repcontent.Mbp / asmblysz.Mbp) * 100
+  
   # build dataframe
   df <- data.frame(species, 
            repcontent.Mbp,

@@ -6,7 +6,7 @@
 ## into a single .csv file
 
 # "vertebrates" or "invertebrates"?
-vert.invert <- "invertebrates"
+vert.invert <- "vertebrates"
 
 library(data.table)
 source("functions.R")
