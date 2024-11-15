@@ -1,19 +1,17 @@
 
 
-
-vert.invert <- "vertebrates"
-
 # load stuff in
 source("../analysis/functions.R")
 packages <- c("ape", "ggplot2", "nlme")
 lapply(packages, library, character.only = TRUE)
-final.results <- read.csv(paste0("../results/", vert.invert, "/final_results.csv"))
-tree <- read.tree(paste0("../data/", vert.invert, "/formatted_tree.nwk"))
+results <- read.csv("../results/vertebrates/parsed.csv")
+tree <- read.tree(paste0("../data/vertebrates/formatted_tree.nwk"))
 tree$tip.label <- gsub("_", " ", tree$tip.label)
 
 # gather and subset relevant results
-final.results <- final.results[!is.na(final.results$chromnum.1n), ]
-dat <- na.omit(final.results[, c("species", "weightcv", "est.gnsz.Mbp", "clade")])
+results <- unique(results[1:22])
+results <- results[!is.na(results$chromnum.1n), ]
+dat <- na.omit(results[, c("species", "weightcv", "est.gnsz.Mbp", "clade")])
 sp.intersect <- intersect(dat$species, tree$tip.label)
 dat <- dat[dat$species %in% sp.intersect, ]
 
@@ -66,7 +64,7 @@ ggplot(dat, aes(x = est.gnsz_Gbp, y = weightcv, color = clade)) +
        subtitle = bquote(italic(β) == .(slope) * "," ~~ italic(β) ~ italic(p) * "-value" == .(slope.pval) * "," ~~ italic(r) == .(r) * "," ~~ "permutation" ~ italic(p) * "-value" == .(perm.pval)),
        x = "Estimated Genome Size (Gbp)", 
        y = bquote("Weighted CV"))
-ggsave(filename = paste0("wcv_gnsz_scatter_", vert.invert, ".jpg"), 
+ggsave(filename = paste0("wcv_gnsz_scatter.jpg"), 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 

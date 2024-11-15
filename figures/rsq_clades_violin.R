@@ -1,13 +1,10 @@
 
 
-
-vert.invert <- "vertebrates"
-
-
 packages <- c("ggplot2", "ggbeeswarm")
 lapply(packages, library, character.only = TRUE)
-final.results <- read.csv(paste0("../results/", vert.invert, "/final_results.csv"))
-dat <- final.results[, c("species", "rsq", "clade")]
+results <- read.csv("../results/vertebrates/parsed.csv")
+results <- unique(results[1:22])
+dat <- results[, c("species", "rsq", "clade")]
 dat <- na.omit(dat[dat$clade != "Others", ])
 num.mammals <- sum(dat$clade == "Mammalia")
 num.fish <- sum(dat$clade == "Actinopterygii")
@@ -23,7 +20,7 @@ if (anova < 0.05) {
 }
 
 ggplot(dat, aes(x = clade, y = rsq, fill = clade)) +
-  ggtitle(bquote("rsq Across Clades"))+
+  ggtitle(bquote(italic(r)^2 ~ "Across Clades"))+
   theme(plot.title = element_text(hjust = 0.45), 
         axis.line = element_line(color = "black"),
         panel.background = element_rect(fill = "white"),
@@ -33,13 +30,13 @@ ggplot(dat, aes(x = clade, y = rsq, fill = clade)) +
                               "Actinopterygii" = bquote("Ray-finned fish"~~(n==.(num.fish))), 
                               "Sauria" = bquote("Reptiles"~~(n==.(num.reptiles))))) +
   labs(x = "", 
-       y = bquote("rsq")) +
+       y = bquote(italic(r)^2)) +
   guides(fill = "none") +
   geom_violin() +
   geom_boxplot(width = 0.05, outliers = FALSE) +
   ylim(c(0, 1)) +
   geom_beeswarm(shape = 16, size = 1.5, cex = 1.75, alpha = 0.4, fill = "black", color = "black")
-ggsave(filename = paste0("rsq_clades_violin_", vert.invert, ".jpg"), 
+ggsave(filename = paste0("rsq_clades_violin.jpg"), 
        plot = last_plot(), 
        width = 7680, 
        height = 4320, 

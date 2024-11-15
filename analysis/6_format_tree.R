@@ -5,11 +5,11 @@
 # load stuff in
 library(ape)
 source("../analysis/functions.R")
-dat <- read.csv("../results/vertebrates/final_results.csv")
+dat <- read.csv("../results/vertebrates/unparsed.csv")
 tree <- read.tree("../data/vertebrates/chordates_species.nwk")
 
 # format and prune tree
-sp <- dat$species
+sp <- unique(dat$species)
 spf <- sub("^([^_]*_[^_]*)_.*", "\\1", gsub(" ", "_", sp))
 sp.intersect <- intersect(tree$tip.label, spf)
 pruned.tree <- drop.tip(tree, tree$tip.label[!(tree$tip.label %in% sp.intersect)])
