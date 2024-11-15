@@ -11,16 +11,16 @@ dataFromFasta <- function(fasta.path, chromnum.1n, mito.keywords, verbose) {
   # get headers from fasta vector
   header <- fasta[header.ind]
   # get contig sizes from each header
-  contig.size.Mbp <- as.numeric(sub(".*:([0-9]+):1 REF", "\\1", header)) / 1000000
+  size.Mbp <- as.numeric(sub(".*:([0-9]+):1 REF", "\\1", header)) / 1000000
   # get contig names from each header
-  contig.name <- sub(">\\s*([^ ]+).*", "\\1", header)
+  name <- sub(">\\s*([^ ]+).*", "\\1", header)
   # get assembly size from all contigs excluding mitochondrial
-  mito.indices <- which(!tolower(contig.name) %in% mito.keywords)
-  asmbly.size.Mbp <- sum(na.omit(contig.size.Mbp[mito.indices]))
+  mito.indices <- which(!tolower(name) %in% mito.keywords)
+  asmblysize.Gbp <- sum(na.omit(size.Mbp[mito.indices])) / 1000
   # create table
-  fasta.data <- data.table(contig.name, contig.size.Mbp, asmbly.size.Mbp)
+  fasta.data <- data.table(name, size.Mbp, asmblysize.Gbp)
   # sort by size
-  fasta.data <- fasta.data[order(fasta.data$contig.size.Mbp, decreasing = TRUE), ]
+  fasta.data <- fasta.data[order(fasta.data$size.Mbp, decreasing = TRUE), ]
   # Keep large contigs
   fasta.data <- head(fasta.data, 2 * chromnum.1n)
   return(fasta.data)
@@ -32,25 +32,25 @@ dataFromFasta <- function(fasta.path, chromnum.1n, mito.keywords, verbose) {
 ## genes in the assembly by counting the number of rows in the gtf minus the
 ## rows with contig names that match the mitochondrial keywords. outputs the
 ## results as a datatable
-dataFromGtf <- function(gtf.file.path, contig.name, mito.keywords, verbose) {
+dataFromGtf <- function(gtf.file.path, name, mito.keywords, verbose) {
   # read gtf
   gtf <- read.table(gtf.file.path, header = TRUE, sep = "\t")
   # filter for genes only
   gtf <- gtf[which(gtf[, 3] == "gene"), ]
   # get the number of genes in each contig
-  contig.gene.count <- sapply(
-    contig.name, function(contig.name) table(gtf[[1]])[contig.name])
-  return(contig.gene.count)
+  genecount <- sapply(
+    name, function(name) table(gtf[[1]])[name])
+  return(genecount)
 }
 
 
 ## Takes a character vector of divsum files as an input. reads each file and
 ## calculates the mean K2P distance. outputs the mean K2P distance of each
 ## species as a dataframe
-calcRepLandscStats <- function(species, file, asmblysz.Mbp, vert.invert) {
+calcRepLandscStats <- function(species, file, asmblysz.Mbp) {
   # read text file into lines
   divsum.vector <- readLines(
-    paste0("../results/", vert.invert, "/repeat_landscape_divsums/", file))
+    paste0("../results/vertebrates/repeat_landscape_divsums/", file))
   # look for the start of relevant information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, divsum.vector) + 1
@@ -81,12 +81,12 @@ calcRepLandscStats <- function(species, file, asmblysz.Mbp, vert.invert) {
   # calculate mean
   k2p.mean <- sum(divergence*frequency)/sum(frequency)
   # repeat content in percent coverage
-  repcontent.percentcoverage <- (repcontent.Mbp / asmblysz.Mbp) * 100
+  repcontent.pctcvrg <- (repcontent.Mbp / asmblysz.Mbp) * 100
   
   # build dataframe
   df <- data.frame(species, 
            repcontent.Mbp,
-           repcontent.percentcoverage, 
+           repcontent.pctcvrg, 
            k2p.mean, 
            k2p.median)
   return(df)

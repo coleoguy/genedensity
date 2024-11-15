@@ -28,7 +28,7 @@ library(data.table)
 # source function
 source("functions.R")
 # load chromosome numbers
-chromnums <- read.csv(paste0("../data/", vert.invert, "/chromnums.csv"))
+chromnums <- read.csv(paste0("../data/", vert.invert, "/data.csv"))
 # list genome files
 genome.files <- list.files(paste0("../data/", vert.invert, "/genomes"))
 # pull species names from list of genome files
@@ -39,7 +39,7 @@ results <- list.files(
 # pull species names from list of result files
 result.species <- gsub("_", " ", unique(gsub("\\..*$", "", results)))
 # begin loop
-for (species in all.species[231:262]) {
+for (species in all.species) {
   if (verbose == TRUE) {
     start.time <- Sys.time()
     gc()
@@ -51,8 +51,11 @@ for (species in all.species[231:262]) {
     chromnum.1n <- chromnums$chromnum.1n[chromnums$species == species]
     # proceed if chromosme number is available, else go to next species
     if (is.na(chromnum.1n)) {
-      chromnum.1n <- 25
-    }
+      chromnum.1n <- chromnums$chromnum.est[chromnums$species == species]
+    } 
+    if (is.na(chromnum.1n)) {
+      chromnum.1n <- 50
+    } 
     # create full paths for files. sort alphabetically to place
     # the fasta file in front of the gff3/gtf file
     genome.files <- sort(paste0("../data/", 
@@ -69,29 +72,29 @@ for (species in all.species[231:262]) {
     # read fasta
     fasta.data <- dataFromFasta(
       fasta.path, chromnum.1n, mito.keywords, verbose)
-    contig.name <- fasta.data$contig.name
-    contig.size.Mbp <- fasta.data$contig.size.Mbp
-    asmbly.size.Mbp <- unique(fasta.data$asmbly.size.Mbp)
+    name <- fasta.data$name
+    size.Mbp <- fasta.data$size.Mbp
+    asmblysize.Gbp <- unique(fasta.data$asmblysize.Gbp)
     rm(fasta.data)
     gc()
-    if (length(contig.name) != 0) {
+    if (length(name) != 0) {
       # read gtf/gff3
-      contig.gene.count <- dataFromGtf(gtf.path, contig.name, mito.keywords, verbose)
+      genecount <- dataFromGtf(gtf.path, name, mito.keywords, verbose)
       # proceed if gene count is available for more than one contig
-      if (sum(is.na(contig.gene.count)) < length(contig.name)) {
+      if (sum(is.na(genecount)) < length(name)) {
         # assemble datatable
         dat <- data.table(species,
-                          contig.name, 
-                          contig.size.Mbp, 
-                          contig.gene.count)
+                          name, 
+                          size.Mbp, 
+                          genecount)
         dat <- na.omit(dat)
         # calculate gene density
-        contig.genedens.geneperMbp <- dat$contig.gene.count/dat$contig.size.Mbp
+        genedens <- dat$genecount/dat$size.Mbp
         # add gene density to datatable
         dat <- data.table(
           dat,
-          contig.genedens.geneperMbp,
-          asmbly.size.Mbp
+          genedens,
+          asmblysize.Gbp
         )
         # write results
         result.path <- paste0("../results/", 
