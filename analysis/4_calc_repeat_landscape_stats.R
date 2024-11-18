@@ -28,7 +28,7 @@ for (i in dat$species) {
 df <- merge(unparsed, replandsc.stats, by = "species", all.x = TRUE)
 
 # reorganize and save results
-df <- df[, c(1:19, 23:26, 20:22)]
+df <- df[, c(1:18, 23:26, 19:22)]
 write.csv(df,
           "../results/vertebrates/unparsed.csv", 
           row.names = FALSE)

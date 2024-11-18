@@ -50,7 +50,7 @@ final[final$clade %in% "Reptilia", ]$clade <- "Sauria"
 final[!(final$clade %in% c("Actinopterygii", "Mammalia", "Sauria")), ]$clade <- "Others"
 
 # reorder columns
-final <- final[, c(1, 22, 2:11, 21, 20, 12:19)]
+final <- final[, c(1, 22, 2:11, 21, 12:20)]
 
 # write csv
 write.csv(final, "../results/vertebrates/unparsed.csv", row.names = FALSE)
