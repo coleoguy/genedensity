@@ -11,7 +11,7 @@ unparsed <- read.csv("../results/vertebrates/unparsed.csv")
 source("functions.R")
 files <- list.files("../results/vertebrates/repeat_landscape_divsums")
 species <- gsub("_", " ", gsub(".divsum$", "", files))
-asmblysz <- unique(unparsed[, c(1, 17)])
+asmblysz <- unique(unparsed[, c(1, 13)])
 asmblysz <- asmblysz[asmblysz$species %in% species, ]
 asmblysz <- asmblysz[order(asmblysz$species == species), ]
 dat <- data.frame(asmblysz, files)
@@ -28,17 +28,16 @@ for (i in dat$species) {
 df <- merge(unparsed, replandsc.stats, by = "species", all.x = TRUE)
 
 # reorganize and save results
-dg <- df[, -c(13:16)]
-dg <- data.frame(dg, df[13:16])
-write.csv(dg,
+df <- df[, c(1:19, 23:26, 20:22)]
+write.csv(df,
           "../results/vertebrates/unparsed.csv", 
           row.names = FALSE)
 
 # parse contigs
-dg <- dg[dg$size.Mbp >= 10, ]
-sp.lessthanthree <- names(which(table(dg$species) < 3))
-dg <- dg[!(dg$species %in% sp.lessthanthree), ]
-write.csv(dg,
+df <- df[df$size.Mbp >= 10, ]
+sp.lessthanthree <- names(which(table(df$species) < 3))
+df <- df[!(df$species %in% sp.lessthanthree), ]
+write.csv(df,
           "../results/vertebrates/parsed.csv", 
           row.names = FALSE)
 

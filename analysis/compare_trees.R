@@ -2,7 +2,6 @@
 
 library(ape)
 library(phangorn)
-library(dendextend)
 source("../analysis/functions.R")
 dat <- read.csv("../results/vertebrates/unparsed.csv")
 dat <- dat[dat$clade == "Mammalia", ]
@@ -32,9 +31,9 @@ pruned.timetree <- keep.tip(pruned.timetree, intersect.both)
 #compare
 
 #summary
-comparePhylo(unroot(pruned.goodtree), unroot(pruned.timetree))
+comparePhylo(pruned.goodtree, pruned.timetree)
 #distances
-treedist(unroot(pruned.goodtree), unroot(pruned.timetree))
+treedist(pruned.goodtree, pruned.timetree)
 #correlation
 cor(pruned.goodtree$edge.length, pruned.timetree$edge.length)
 #agreement

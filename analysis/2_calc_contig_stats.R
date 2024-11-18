@@ -5,35 +5,52 @@
 # Description: Parses results and calculates additional statistics
 # to summarize contigs for each species
 
-input <- read.csv("../results/vertebrates/unparsed.csv")
+dat <- read.csv("../data/vertebrates/data.csv")
 
-# parsing
-parsed <- input[input$size.Mbp >= 10, ]
+# combine raw contig results
+library(data.table)
+dir <- "../results/vertebrates/individual_species_results"
+files <- paste0(dir, "/",  list.files(dir))
+raw <- lapply(files, fread)
+raw <- as.data.frame(rbindlist((raw), fill = TRUE))
+
+# parse results
+parsed <- raw[raw$size.Mbp >= 10, ]
 sp.lessthanthree <- names(which(table(parsed$species) < 3))
 parsed <- parsed[!(parsed$species %in% sp.lessthanthree), ]
 
-# calculate stats
-sp <- unique(input$species)
+# calculate stats based on parsed results and record the unparsed contigs
+sp <- unique(raw$species)
 final <- data.frame()
 for (species in sp) {
-  sub <- input[input$species == species, ]
-  sub2 <- parsed[parsed$species == species, ]
-  if (nrow(sub2) > 0){
-    fit <- summary(glm(sub2$genecount ~ sub2$size.Mbp))
+  i <- species
+  rawsub <- raw[which(raw$species == i), ]
+  parsedsub <- parsed[which(parsed$species == i), ]
+  if (nrow(parsedsub) > 0){
+    fit <- summary(glm(parsedsub$genecount ~ parsedsub$size.Mbp))
     beta <- fit$coefficients[2, 1]
     pval.beta <- fit$coefficients[2, 4]
-    rsq <- summary(lm(sub2$genecount ~ sub2$size.Mbp))$r.squared
-    cv <- sd(sub2$genedens) / mean(sub2$genedens)
-    weightmean <- sum(sub2$genedens * sub2$size.Mbp) / sum(sub2$size.Mbp)
-    weightsd <- sqrt(sum(sub2$size.Mbp * (sub2$genedens - weightmean)^2) / sum(sub2$size.Mbp))
+    rsq <- summary(lm(parsedsub$genecount ~ parsedsub$size.Mbp))$r.squared
+    cv <- sd(parsedsub$genedens) / mean(parsedsub$genedens)
+    weightmean <- sum(parsedsub$genedens * parsedsub$size.Mbp) / sum(parsedsub$size.Mbp)
+    weightsd <- sqrt(sum(parsedsub$size.Mbp * (parsedsub$genedens - weightmean)^2) / sum(parsedsub$size.Mbp))
     weightcv <- weightsd / weightmean
     contig.stats <- data.frame(species, beta, pval.beta, rsq, cv, weightcv)
   } else {
     beta <- pval.beta <- rsq <- cv <- weightcv <- NA
     contig.stats <- data.frame(species, beta, pval.beta, rsq, cv, weightcv)
   }
-  final <- rbind(final, merge(sub, contig.stats, by = "species"))
+  final <- rbind(final, merge(merge(dat[dat$species == species, ], contig.stats, by = "species"), rawsub, by = "species", all = TRUE))
 }
+
+#assign clades
+final$clade <- final$class
+final[final$clade %in% "Aves", ]$clade <- "Sauria"
+final[final$clade %in% "Reptilia", ]$clade <- "Sauria"
+final[!(final$clade %in% c("Actinopterygii", "Mammalia", "Sauria")), ]$clade <- "Others"
+
+# reorder columns
+final <- final[, c(1, 22, 2:11, 21, 20, 12:19)]
 
 # write csv
 write.csv(final, "../results/vertebrates/unparsed.csv", row.names = FALSE)
