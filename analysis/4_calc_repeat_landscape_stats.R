@@ -54,9 +54,6 @@ for (i in dat$species) {
   # mean
   meandvg <- sum(divergence*perdivrep.pct)/sum(perdivrep.pct)
   
-  # smoothed repeat content in percent coverage
-  perdivsmooth.pct <- smooth.spline(1:length(perdivrep.pct), perdivrep.pct, spar = 0.6)$y
-  
   # build dataframe
   df <- data.frame(i, 
                    totalrep.Mbp,
