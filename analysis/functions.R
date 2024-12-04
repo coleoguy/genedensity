@@ -47,7 +47,7 @@ dataFromGtf <- function(gtf.file.path, name, mito.keywords, verbose) {
 ## Takes a character vector of divsum files as an input. reads each file and
 ## calculates the mean K2P distance. outputs the mean K2P distance of each
 ## species as a dataframe
-calcRepLandscStats <- function(species, file, asmblysz.Mbp) {
+calcRepStats <- function(species, file, asmblysz.Mbp) {
   # read text file into lines
   divsum.vector <- readLines(
     paste0("../results/vertebrates/repeat_landscape_divsums/", file))
@@ -65,30 +65,35 @@ calcRepLandscStats <- function(species, file, asmblysz.Mbp) {
   # vector of divergence scores
   divergence <- divsum.table$Div
   # vector of the frequencies of each divergence score
-  frequency <- rowSums(divsum.table[, !names(divsum.table) == "Div"])
-  # repeat content in Mbp
-  repcontent.Mbp <- sum(frequency) / 1000000
-  # the bin that contains the median
-  median.bin <- which(cumsum(frequency) > sum(frequency)/2)[1]
-  # frequency of the previous bin
-  lower <- cumsum(frequency)[median.bin-1]
-  # frequency of the next bin
-  upper <- cumsum(frequency)[median.bin+1]
-  # median frequency
-  mid <- sum(frequency)/2
-  # median bin
-  k2p.median <- median.bin + (mid-lower)/(upper-lower)
-  # calculate mean
-  k2p.mean <- sum(divergence*frequency)/sum(frequency)
-  # repeat content in percent coverage
-  repcontent.pctcvrg <- (repcontent.Mbp / asmblysz.Mbp) * 100
+  perdivrep.bp <- rowSums(divsum.table[, !names(divsum.table) == "Div"])
   
+  # repeat content in Mbp
+  totalrep.Mbp <- sum(perdivrep.bp) / 1000000
+  
+  # repeat content in percent coverage
+  perdivrep.pct <- 0.0001 * (perdivrep.bp / asmblysz.Mbp)
+  totalrep.pct <- sum(perdivrep.pct)
+  
+  
+  # median
+  median.bin <- which(cumsum(perdivrep.pct) > sum(perdivrep.pct)/2)[1]
+  lower <- cumsum(perdivrep.pct)[median.bin-1]
+  upper <- cumsum(perdivrep.pct)[median.bin+1]
+  mid <- sum(perdivrep.pct)/2
+  mediandvg <- median.bin + (mid-lower)/(upper-lower)
+  
+  # mean
+  meandvg <- sum(divergence*perdivrep.pct)/sum(perdivrep.pct)
+  
+  # smoothed repeat content in percent coverage
+  perdivsmooth.pct <- smooth.spline(1:length(perdivrep.pct), perdivrep.pct, spar = 0.6)$y
+ 
   # build dataframe
   df <- data.frame(species, 
-           repcontent.Mbp,
-           repcontent.pctcvrg, 
-           k2p.mean, 
-           k2p.median)
+           totalrep.Mbp,
+           totalrep.pct, 
+           meandvg, 
+           mediandvg)
   return(df)
 }
 

@@ -31,14 +31,16 @@ for (species in sp) {
     beta <- fit$coefficients[2, 1]
     pval.beta <- fit$coefficients[2, 4]
     rsq <- summary(lm(parsedsub$genecount ~ parsedsub$size.Mbp))$r.squared
-    cv <- sd(parsedsub$genedens) / mean(parsedsub$genedens)
+    sdgd <- sd(parsedsub$genedens)
+    meangd <- mean(parsedsub$genedens)
+    cor <- cor(parsedsub$size.Mbp, parsedsub$genecount)
     weightmean <- sum(parsedsub$genedens * parsedsub$size.Mbp) / sum(parsedsub$size.Mbp)
     weightsd <- sqrt(sum(parsedsub$size.Mbp * (parsedsub$genedens - weightmean)^2) / sum(parsedsub$size.Mbp))
     weightcv <- weightsd / weightmean
-    contig.stats <- data.frame(species, beta, pval.beta, rsq, cv, weightcv)
+    contig.stats <- data.frame(species, beta, meangd, sdgd, pval.beta, rsq, cor, weightmean, weightsd, weightcv)
   } else {
-    beta <- pval.beta <- rsq <- cv <- weightcv <- NA
-    contig.stats <- data.frame(species, beta, pval.beta, rsq, cv, weightcv)
+    beta <- meangd <- sdgd <- pval.beta <- rsq <- cor <- weightmean <- weightsd <- weightcv <- NA
+    contig.stats <- data.frame(species, beta, meangd, sdgd, pval.beta, rsq, cor, weightmean, weightsd, weightcv)
   }
   final <- rbind(final, merge(merge(dat[dat$species == species, ], contig.stats, by = "species"), rawsub, by = "species", all = TRUE))
 }
@@ -50,7 +52,8 @@ final[final$clade %in% "Reptilia", ]$clade <- "Sauria"
 final[!(final$clade %in% c("Actinopterygii", "Mammalia", "Sauria")), ]$clade <- "Others"
 
 # reorder columns
-final <- final[, c(1, 22, 2:11, 21, 12:20)]
+final <- final[, c(1, 26, 2:11, 25, 12:24)]
 
 # write csv
 write.csv(final, "../results/vertebrates/unparsed.csv", row.names = FALSE)
+

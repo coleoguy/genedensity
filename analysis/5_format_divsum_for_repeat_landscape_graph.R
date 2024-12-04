@@ -74,17 +74,17 @@ for (file in files) {
   # format repeat divergence for plotting
   divergence <- rep(results.table$Div, length(colnames(results.table))-1)
   # get sequence lengths from the table as a vector
-  sequence.lengths.Mbp <- as.numeric(unlist(results.table[-c(1)])) / 1000000
+  totalength.Mbp <- as.numeric(unlist(results.table[-c(1)])) / 1000000
   # find the assembly size of the species
   gnsz.Mbp <- unique(dat$asmblysize.Mbp[dat$species == species])
   # calculate the percentage of the genome for repeats in each repeat class and divergence
-  percent.of.genome <- sequence.lengths.Mbp / gnsz.Mbp * 100
+  percent.cvrg <- totalength.Mbp / gnsz.Mbp * 100
   # format repeat classes for plotting
-  repeat.group <- as.character(
+  repeat.class <- as.character(
     sapply(colnames(results.table)[colnames(results.table) != "Div"], 
            function(rowname) rep(rowname, length(results.table$Div))))
   # assemble dataframe for plotting
-  final <- data.frame(species, divergence, sequence.lengths.Mbp, percent.of.genome, repeat.group)
+  final <- data.frame(species, divergence, totalength.Mbp, percent.cvrg, repeat.class)
   write.csv(final, 
             paste0("../results/vertebrates/repeat_landscape_plotting/", 
                    gsub(" ", "_", species), 

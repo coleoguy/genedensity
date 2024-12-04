@@ -5,22 +5,29 @@
 ## description: creates a csv file for the repeat landscape shell script. this
 ## file contains species name and family
 
+library(ape)
+results <- read.csv("../results/vertebrates/parsed.csv")
+tree <- read.tree("../data/vertebrates/formatted_tree.nwk")
 
-results <- read.csv(paste0("../data/vertebrates/data.csv"))
-# get species with genome size estimates
-results <- results[!is.na(results$est.gnsz.Mbp), ]
-# subset for species and family
+# drop species not in tree
+results <- unique(results[1:34])
+sp <- intersect(results$species, gsub("_", " ", tree$tip.label))
+results <- results[results$species %in% sp, ]
+
+# drop species without chromosome number
+results <- results[!is.na(results$chromnum.1n), ]
+
+# format species
 results <- results[, c("species", "family")]
-# format species name
 results$species <- na.omit(gsub(" ", "_", results$species))
-# look for analyzed species
-sp.analyzed <- list.files(paste0("../results/vertebrates/repeat_landscape_divsums"))
-# remove file extenison
-sp.analyzed <- gsub(".divsum$", "", sp.analyzed)
+
 # drop analyzed species
+sp.analyzed <- list.files("../results/vertebrates/repeat_landscape_divsums")
+sp.analyzed <- gsub(".divsum$", "", sp.analyzed)
 results <- results[!(results$species %in% sp.analyzed), ]
+
 write.table(results, 
-            paste0("../data/", vert.invert, "/landsc_ref.csv"), 
+            paste0("../data/vertebrates/landsc_ref.csv"), 
             sep = ",", 
             col.names = FALSE, 
             row.names = FALSE,

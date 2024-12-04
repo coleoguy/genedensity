@@ -4,6 +4,7 @@
 
 # load stuff in
 library(ape)
+library(dispRity)
 source("../analysis/functions.R")
 dat <- read.csv("../results/vertebrates/unparsed.csv")
 tree <- read.tree("../data/vertebrates/chordates_species.nwk")
@@ -15,6 +16,13 @@ sp.intersect <- intersect(tree$tip.label, spf)
 pruned.tree <- drop.tip(tree, tree$tip.label[!(tree$tip.label %in% sp.intersect)])
 spn <- sp[match(spf[match(pruned.tree$tip.label, spf)], spf)]
 pruned.tree$tip.label <- spn
+
+# clean zero-length branches
+pruned.tree <- remove.zero.brlen(pruned.tree)
+
+# ultrametricize
+# pruned.tree <- chronos(pruned.tree)
+
 write.tree(pruned.tree, file = paste0("../data/vertebrates/formatted_tree.nwk"))
 
 

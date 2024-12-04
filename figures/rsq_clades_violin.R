@@ -1,10 +1,11 @@
 
 
-packages <- c("ggplot2", "ggbeeswarm")
+packages <- c("ggplot2", "ggbeeswarm", "phytools")
 lapply(packages, library, character.only = TRUE)
-results <- read.csv("../results/vertebrates/parsed.csv")
-results <- unique(results[1:22])
-dat <- results[, c("species", "rsq", "clade")]
+dat <- read.csv("../results/vertebrates/parsed.csv")
+dat <- unique(dat[1:34])
+dat <- dat[!is.na(dat$chromnum.1n), ]
+dat <- dat[, c("species", "rsq", "clade")]
 dat <- na.omit(dat[dat$clade != "Others", ])
 num.mammals <- sum(dat$clade == "Mammalia")
 num.fish <- sum(dat$clade == "Actinopterygii")
@@ -12,12 +13,23 @@ num.reptiles <- sum(dat$clade == "Sauria")
 
 # set factors for figure legend
 dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauria"))
-
+# anova
 aov <- aov(rsq ~ clade, data = dat)
 anova <- summary(aov)[[1]][1, 5]
 if (anova < 0.05) {
   tukey <- TukeyHSD(aov)$clade
 }
+
+# read and prune tree
+tree <- read.tree("../data/vertebrates/formatted_tree.nwk")
+tree$tip.label <- gsub("_", " ", tree$tip.label)
+sp.intersect <- intersect(dat$species, tree$tip.label)
+datsub <- dat[dat$species %in% sp.intersect, ]
+pruned.tree <- keep.tip(tree, sp.intersect)
+
+# phylogenetic anova
+anova <- phylANOVA(pruned.tree, setNames(datsub$clade, datsub$species), setNames(datsub$rsq, datsub$species))
+
 
 ggplot(dat, aes(x = clade, y = rsq, fill = clade)) +
   ggtitle(bquote(italic(r)^2 ~ "Across Clades"))+
