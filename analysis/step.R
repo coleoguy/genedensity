@@ -15,12 +15,17 @@ dat$meansize <- meansize
 
 
 
+# all variables tested: 
+# mediandvg -> bin containing median divergence
+# beta -> beta coefficient of glm(gene number ~ contig size)
+# chromnum.1n
+# meansize -> mean chromosome size
+# totalrep.pct -> repeat percent
 
+################### stepwise selection for 2 variables ######################
 
-########################## 2 variables ###########################
-
+# testing combinations
 d <- na.omit(dat[, c("rsq", "clade", "mediandvg", "beta", "chromnum.1n", "meansize", "totalrep.pct")])
-
 fit <- glm(d$rsq ~ d$beta * d$meansize)
 step(fit) # -22.56
 fit <- glm(d$rsq ~ d$chromnum.1n * d$meansize)
@@ -42,7 +47,7 @@ step(fit) # -13.6
 fit <- glm(d$rsq ~ d$chromnum.1n * d$totalrep.pct)
 step(fit) # -13.33
 
-
+# lowest AIC
 # glm(rsq ~ beta * meansize)
 d <- na.omit(dat[, c("rsq", "clade", "beta", "meansize")])
 summary(glm(d$rsq ~ d$beta * d$meansize))
@@ -53,8 +58,8 @@ summary(glm(d$rsq ~ d$beta * d$meansize))
 r <- d[d$clade == "Sauria", ]
 summary(glm(r$rsq ~ r$beta * r$meansize))
 
-
-# best?
+# second-lowest AIC
+# significant in all clades
 # glm(rsq ~ chromnum.1n * meansize)
 d <- na.omit(dat[, c("rsq", "clade", "chromnum.1n", "meansize")])
 summary(glm(d$rsq ~ d$chromnum.1n + d$meansize))
@@ -65,7 +70,7 @@ summary(glm(d$rsq ~ d$chromnum.1n + d$meansize))
 r <- d[d$clade == "Sauria", ]
 summary(glm(r$rsq ~ r$chromnum.1n + r$meansize))
 
-
+# third-lowest AIC
 # glm(rsq ~ mediandvg + meansize)
 d <- na.omit(dat[, c("rsq", "clade", "mediandvg", "meansize")])
 summary(glm(d$rsq ~ d$mediandvg + d$meansize))
@@ -78,10 +83,14 @@ summary(glm(r$rsq ~ r$mediandvg + r$meansize))
 
 
 
-########################## 3 variables ##############################
 
+
+
+
+#################### stepwise selection for 3 variables ######################
+
+# testing combinations
 d <- na.omit(dat[, c("rsq", "clade", "mediandvg", "beta", "chromnum.1n", "meansize", "totalrep.pct")])
-
 fit <- glm(d$rsq ~ d$mediandvg * d$meansize * d$totalrep.pct)
 step(fit) # -29.18
 fit <- glm(d$rsq ~ d$mediandvg * d$chromnum.1n * d$meansize)
@@ -103,7 +112,7 @@ step(fit) # -16.67
 fit <- glm(d$rsq ~ d$beta * d$chromnum.1n * d$totalrep.pct)
 step(fit) # -13.6
 
-
+# lowest AIC
 # glm(rsq ~ mediandvg + meansize + totalrep.pct + mediandvg:totalrep.pct)
 d <- na.omit(dat[, c("rsq", "clade", "mediandvg", "meansize", "totalrep.pct")])
 summary(glm(d$rsq ~ d$mediandvg + d$meansize + d$totalrep.pct + d$mediandvg:d$totalrep.pct))
@@ -114,8 +123,8 @@ summary(glm(f$rsq ~ f$mediandvg + f$meansize + f$totalrep.pct + f$mediandvg:f$to
 r <- d[d$clade == "Sauria", ]
 summary(glm(r$rsq ~ r$mediandvg + r$meansize + r$totalrep.pct + r$mediandvg:r$totalrep.pct))
 
-
-# ok for mammals
+# second-lowest AIC
+# significant for mammals
 # glm(rsq ~ mediandvg + chromnum.1n + meansize + mediandvg:chromnum.1n + mediandvg:meansize)  
 d <- na.omit(dat[, c("rsq", "clade", "mediandvg", "chromnum.1n", "meansize")])
 summary(glm(d$rsq ~ d$mediandvg + d$chromnum.1n + d$meansize + d$mediandvg:d$chromnum.1n + d$mediandvg:d$meansize))
@@ -126,6 +135,7 @@ summary(glm(f$rsq ~ f$mediandvg + f$chromnum.1n + f$meansize + f$mediandvg:f$chr
 r <- d[d$clade == "Sauria", ]
 summary(glm(r$rsq ~ r$mediandvg + r$chromnum.1n + r$meansize + r$mediandvg:r$chromnum.1n + r$mediandvg:r$meansize))
 
+# third-lowest AIC
 # glm(rsq ~ beta + chromnum.1n + meansize + beta:meansize)
 d <- na.omit(dat[, c("rsq", "clade", "beta", "chromnum.1n", "meansize")])
 summary(glm(d$rsq ~ d$beta + d$chromnum.1n + d$meansize + d$beta:d$meansize))
