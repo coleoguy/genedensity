@@ -55,7 +55,7 @@ step(fit) # -13.27
 fit <- glm(d$rsq ~ d$beta * d$chromnum.1n)
 step(fit) # -11.55
 fit <- glm(d$rsq ~ d$beta * d$totalrep.pct)
-step(fit) # -11.28
+step(fit) # -11.18
 fit <- glm(d$rsq ~ d$chromnum.1n * d$totalrep.pct)
 step(fit) # -11.18
 
