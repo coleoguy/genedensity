@@ -2,15 +2,15 @@
 # zhaobohu2002@gmail.com
 
 # Description: Calculates statistics to summarize repeat landscape
-# characteristics for each species. saves one file with unparsed
+# characteristics for each species. saves one file with parsed
 # contigs and another file for parsed contigs
 
-unparsed <- read.csv("../results/vertebrates/unparsed.csv")
+parsed <- read.csv("../results/vertebrates/parsed.csv")
 
 # calculate stats
 files <- list.files("../results/vertebrates/repeat_landscape_divsums")
 species <- gsub("_", " ", gsub(".divsum$", "", files))
-asmblysz <- unique(unparsed[, c(1, 13)])
+asmblysz <- unique(parsed[, c(1, 13)])
 asmblysz <- asmblysz[asmblysz$species %in% species, ]
 asmblysz <- asmblysz[order(asmblysz$species == species), ]
 dat <- data.frame(asmblysz, files)
@@ -34,48 +34,40 @@ for (i in dat$species) {
     -c(which(sapply(divsum.table, function(col) all(is.na(col)))))]
   # vector of divergence scores
   divergence <- divsum.table$Div
-  # vector of the frequencies of each divergence score
-  perdivrep.bp <- rowSums(divsum.table[, !names(divsum.table) == "Div"])
+  # vector of the repeat content of each divergence score
+  rep.bp <- rowSums(divsum.table[, !names(divsum.table) == "Div"])
   
   # repeat content in Mbp
-  totalrep.Mbp <- sum(perdivrep.bp) / 1000000
+  totalrep.Mbp <- sum(rep.bp) / 1000000
   
   # repeat content in percent coverage
-  perdivrep.pct <- 0.0001 * (perdivrep.bp / asmblysz.Mbp)
-  totalrep.pct <- sum(perdivrep.pct)
+  rep.pct <- 0.0001 * (rep.bp / asmblysz.Mbp) # 0.0001% = (bp / Mbp) * (1 Mbp / 1000000 bp) * (100%) 
+  totalrep.pct <- sum(rep.pct)
   
-  # median
-  median.bin <- which(cumsum(perdivrep.pct) > sum(perdivrep.pct)/2)[1]
-  lower <- cumsum(perdivrep.pct)[median.bin-1]
-  upper <- cumsum(perdivrep.pct)[median.bin+1]
-  mid <- sum(perdivrep.pct)/2
-  mediandvg <- median.bin + (mid-lower)/(upper-lower)
+  # divergence bin with median repeat
+  median <- which(cumsum(rep.pct) > sum(rep.pct)/2)[1]
   
-  # mean
-  meandvg <- sum(divergence*perdivrep.pct)/sum(perdivrep.pct)
+  # unused
+  # mean <- sum(divergence*perdivrep.pct)/sum(perdivrep.pct)
+  # k <- kurtosis(perdivrep.pct)
+  # s <- skewness(perdivrep.pct)
+  # max <- max(perdivrep.pct)
+  # which <- which.max(perdivrep.pct)
   
   # build dataframe
   df <- data.frame(i, 
                    totalrep.Mbp,
                    totalrep.pct, 
-                   meandvg, 
-                   mediandvg)
+                   median)
   repstats <- rbind(repstats, df)
 }
 colnames(repstats)[1] <- "species"
-df <- merge(unparsed, repstats, by = "species", all.x = TRUE)
+df <- merge(parsed, repstats, by = "species", all.x = TRUE)
 
 # reorganize and save results
-df <- df[, c(1:22, 27:30, 23:26)]
-write.csv(df,
-          "../results/vertebrates/unparsed.csv", 
-          row.names = FALSE)
-
-# parse contigs
-df <- df[df$size.Mbp >= 10, ]
-sp.lessthanthree <- names(which(table(df$species) < 3))
-df <- df[!(df$species %in% sp.lessthanthree), ]
+df <- df[, c(1:22, 27:29, 23:26)]
 write.csv(df,
           "../results/vertebrates/parsed.csv", 
           row.names = FALSE)
+
 

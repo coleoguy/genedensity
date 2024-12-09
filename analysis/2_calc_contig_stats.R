@@ -20,29 +20,28 @@ sp.lessthanthree <- names(which(table(parsed$species) < 3))
 parsed <- parsed[!(parsed$species %in% sp.lessthanthree), ]
 
 # calculate stats based on parsed results and record the unparsed contigs
-sp <- unique(raw$species)
+sp <- unique(parsed$species)
 final <- data.frame()
 for (species in sp) {
   i <- species
-  rawsub <- raw[which(raw$species == i), ]
-  parsedsub <- parsed[which(parsed$species == i), ]
-  if (nrow(parsedsub) > 0){
-    fit <- summary(glm(parsedsub$genecount ~ parsedsub$size.Mbp))
+  sub <- parsed[which(parsed$species == i), ]
+  if (nrow(sub) > 0){
+    fit <- summary(glm(sub$genecount ~ sub$size.Mbp))
     beta <- fit$coefficients[2, 1]
     pval.beta <- fit$coefficients[2, 4]
-    rsq <- summary(lm(parsedsub$genecount ~ parsedsub$size.Mbp))$r.squared
-    sdgd <- sd(parsedsub$genedens)
-    meangd <- mean(parsedsub$genedens)
-    cor <- cor(parsedsub$size.Mbp, parsedsub$genecount)
-    weightmean <- sum(parsedsub$genedens * parsedsub$size.Mbp) / sum(parsedsub$size.Mbp)
-    weightsd <- sqrt(sum(parsedsub$size.Mbp * (parsedsub$genedens - weightmean)^2) / sum(parsedsub$size.Mbp))
+    rsq <- summary(lm(sub$genecount ~ sub$size.Mbp))$r.squared
+    sdgd <- sd(sub$genedens)
+    meangd <- mean(sub$genedens)
+    cor <- cor(sub$size.Mbp, sub$genecount)
+    weightmean <- sum(sub$genedens * sub$size.Mbp) / sum(sub$size.Mbp)
+    weightsd <- sqrt(sum(sub$size.Mbp * (sub$genedens - weightmean)^2) / sum(sub$size.Mbp))
     weightcv <- weightsd / weightmean
     contig.stats <- data.frame(species, beta, meangd, sdgd, pval.beta, rsq, cor, weightmean, weightsd, weightcv)
   } else {
     beta <- meangd <- sdgd <- pval.beta <- rsq <- cor <- weightmean <- weightsd <- weightcv <- NA
     contig.stats <- data.frame(species, beta, meangd, sdgd, pval.beta, rsq, cor, weightmean, weightsd, weightcv)
   }
-  final <- rbind(final, merge(merge(dat[dat$species == species, ], contig.stats, by = "species"), rawsub, by = "species", all = TRUE))
+  final <- rbind(final, merge(merge(dat[dat$species == species, ], contig.stats, by = "species"), sub, by = "species", all = TRUE))
 }
 
 #assign clades
@@ -55,5 +54,10 @@ final[!(final$clade %in% c("Actinopterygii", "Mammalia", "Sauria")), ]$clade <- 
 final <- final[, c(1, 26, 2:11, 25, 12:24)]
 
 # write csv
-write.csv(final, "../results/vertebrates/unparsed.csv", row.names = FALSE)
+write.csv(final, "../results/vertebrates/parsed.csv", row.names = FALSE)
+
+
+
+
+
 
