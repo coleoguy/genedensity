@@ -49,7 +49,10 @@ res <- setNames(resid(glm(m$rsq ~ m$median.trans * m$totalrep.prop)), m$species)
 phylosig(pruned.tree, res, method = "lambda", test = TRUE) # mammals
 summary(pgls(rsq ~ totalrep.prop * median.trans, data = cd))
 
-
-
+# PGLS for fish despite lack of phylogenetic signal
+res <- setNames(resid(glm(f$rsq ~ f$median.trans * f$totalrep.prop)), f$species)
+phylosig(pruned.tree, res, method = "lambda", test = TRUE)
+cd <- comparative.data(tree, f, species)
+summary(pgls(rsq ~ totalrep.prop * median.trans, data = cd))
 
 
