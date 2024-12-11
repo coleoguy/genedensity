@@ -1,47 +1,51 @@
 
-# model
+# transform results
 dat <- read.csv("../results/vertebrates/parsed.csv")
 dat <- dat[!duplicated(dat$species), ]
+dat$median.trans <- 1 - (dat$median/70)
+dat$totalrep.prop <- dat$totalrep.pct * 0.01
 
-d <- na.omit(dat[, c("species", "rsq", "clade", "median", "totalrep.pct")])
-summary(step(glm(d$rsq ~ d$median * d$totalrep.pct)))
+# subset data and perform stepwise model selection
+d <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "totalrep.prop")])
+summary(step(glm(d$rsq ~ d$median.trans * d$totalrep.prop))) # d$rsq ~ d$median.trans * d$totalrep.prop
 
+# stepwise selection for each clade
 m <- d[d$clade == "Mammalia", ]
-summary(step(glm(m$rsq ~ m$median * m$totalrep.pct)))
-
+summary(step(glm(m$rsq ~ m$median.trans * m$totalrep.prop))) # m$rsq ~ m$median.trans
 f <- d[d$clade == "Actinopterygii", ]
-summary(step(glm(f$rsq ~ f$median * f$totalrep.pct)))
-
+summary(step(glm(f$rsq ~ f$median.trans * f$totalrep.prop))) # f$rsq ~ f$median.trans * f$totalrep.prop
 r <- d[d$clade == "Sauria", ]
-summary(step(glm(r$rsq ~ r$median * r$totalrep.pct)))
+summary(step(glm(r$rsq ~ r$median.trans * r$totalrep.prop))) # r$rsq ~ 1
 
-# test for phylogenetic signal
+# prune tree
 library(phytools)
 tree <- read.tree("../data/vertebrates/formatted_tree.nwk")
 tree$tip.label <- gsub("_", " ", tree$tip.label)
 int <- intersect(d$species, tree$tip.label)
 pruned.tree <- keep.tip(tree, int)
-res <- setNames(resid(step(glm(d$rsq ~ d$median:d$totalrep.pct))), d$species)
+
+# test for phylogenetic signal in overall model
+res <- setNames(resid(step(glm(d$rsq ~ d$median.trans * d$totalrep.prop))), d$species)
 phylosig(pruned.tree, res, method = "lambda", test = TRUE)
 
-# PGLS model
-library(caper)
-cd <- comparative.data(tree, d, species)
-pgls.model <- pgls(rsq ~ median + totalrep.pct + median : totalrep.pct, data = cd)
-summary(pgls.model)
+# phylogenetic signals in each clade
+res <- setNames(resid(glm(m$rsq ~ m$median.trans)), m$species)
+phylosig(pruned.tree, res, method = "lambda", test = TRUE) # mammals
+res <- setNames(resid(glm(f$rsq ~ f$median.trans * f$totalrep.prop)), f$species)
+phylosig(pruned.tree, res, method = "lambda", test = TRUE) # fish
+res <- setNames(resid(glm(r$rsq ~ 1)), r$species)
+phylosig(pruned.tree, res, method = "lambda", test = TRUE) # reptiles
 
-# compare AICs
-d <- d[d$species %in% int, ]
-summary(gls(rsq ~ median + totalrep.pct + median:totalrep.pct, 
-    data = d, 
-    correlation = corBrownian(phy = pruned.tree, form = ~species),
-    method = "ML")) # 21.78158
-summary(gls(rsq ~ median, 
-            data = d, 
-            correlation = corBrownian(phy = pruned.tree, form = ~species),
-            method = "ML")) # 23.40565
-summary(gls(rsq ~ totalrep.pct, 
-            data = d, 
-            correlation = corBrownian(phy = pruned.tree, form = ~species),
-            method = "ML")) # 25.3864
+# PGLS for mammals
+library(caper)
+cd <- comparative.data(tree, m, species)
+summary(pgls(rsq ~ median.trans, data = cd))
+
+# did step() overlook this model for mammals...
+summary(pgls(rsq ~ totalrep.prop * median.trans, data = cd))
+
+# ...and for fish?
+cd <- comparative.data(tree, f, species)
+summary(pgls(rsq ~ totalrep.prop * median.trans, data = cd))
+
 
