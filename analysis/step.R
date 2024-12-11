@@ -1,4 +1,7 @@
 
+
+
+
 # transform results
 dat <- read.csv("../results/vertebrates/parsed.csv")
 dat <- dat[!duplicated(dat$species), ]
@@ -41,11 +44,12 @@ library(caper)
 cd <- comparative.data(tree, m, species)
 summary(pgls(rsq ~ median.trans, data = cd))
 
-# did step() overlook this model for mammals...
+# did step() overlook this model for mammals?
+res <- setNames(resid(glm(m$rsq ~ m$median.trans * m$totalrep.prop)), m$species)
+phylosig(pruned.tree, res, method = "lambda", test = TRUE) # mammals
 summary(pgls(rsq ~ totalrep.prop * median.trans, data = cd))
 
-# ...and for fish?
-cd <- comparative.data(tree, f, species)
-summary(pgls(rsq ~ totalrep.prop * median.trans, data = cd))
+
+
 
 
