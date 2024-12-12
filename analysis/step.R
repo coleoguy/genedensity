@@ -14,10 +14,11 @@ dat <- dat[dat$asmblysize.Mbp/dat$est.gnsz.Mbp < 1.1, ]
 dat <- dat[dat$asmblysize.Mbp/dat$est.gnsz.Mbp > 0.9, ]
 
 mam <- dat[dat$clade %in% "Mammalia", ]
+mam <- mam[mam$species != "Capra hircus", ]
 plot(mam$median.trans, mam$rsq)
-abline(glm(mam$rsq ~ mam$median.trans)) # higher score > lower divergence > newer repeats > more variation > lower rsq
+abline(glm(mam$rsq ~ mam$median.trans)) # inconsistent with hypothesis | higher score > lower divergence > newer repeats > more variation > lower rsq
 plot(mam$totalrep.prop, mam$rsq)
-abline(glm(mam$rsq ~ mam$totalrep.prop)) # more repeats > more variation > lower rsq
+abline(glm(mam$rsq ~ mam$totalrep.prop)) # inconsistent with hypothesis | more repeats > more variation > lower rsq
 plot(mam$median.trans*mam$totalrep.prop, mam$rsq)
 term <- mam$median.trans * mam$totalrep.prop
 abline(glm(mam$rsq ~ term))
@@ -86,3 +87,4 @@ summary(pgls(rsq ~ median.trans, data = cd))
 res <- setNames(resid(glm(m$rsq ~ m$median.trans * m$totalrep.prop)), m$species)
 phylosig(pruned.tree, res, method = "lambda", test = TRUE) # mammals
 summary(pgls(rsq ~ totalrep.prop * median.trans, data = cd))
+
