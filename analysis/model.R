@@ -15,7 +15,7 @@ dat <- dat[dat$clade == "Mammalia", ]
 # remove assembly with bloated assembly size
 dat <- dat[dat$species != "Callithrix jacchus", ]
 
-# assign weights
+# assign weights; weights approach 1 as assembly sizes approach genome sizes. weights tend toward 0 as assembly sizes deviate from genome sizes
 dat$w <- 1 - (abs(dat$asmblysize.Mbp - dat$est.gnsz.Mbp) / dat$est.gnsz.Mbp)
 
 # visualize weights
@@ -36,6 +36,11 @@ plot(dat$median.trans * dat$totalrep.prop, dat$rsq)
 term <- dat$median.tran * dat$totalrep.prop
 abline(glm(dat$rsq ~ term, weights = dat$w), col = "blue")
 abline(glm(dat$rsq ~ term))
+
+
+
+
+
 
 
 
