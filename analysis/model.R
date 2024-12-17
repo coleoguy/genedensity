@@ -1,9 +1,8 @@
 
 
-# This model does not work with mammals but works for
-# other clades as well as overall
+# Model for mammals
 
-
+library(viridis)
 # transform results
 dat <- read.csv("../results/vertebrates/parsed.csv")
 dat <- dat[!duplicated(dat$species), ]
@@ -12,8 +11,8 @@ dat$median.trans <- 1 - (dat$median/70)
 dat$totalrep.prop <- dat$totalrep.pct * 0.01
 
 # subset data
-dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "totalrep.prop", "est.gnsz.Mbp", "asmblysize.Mbp")])
-dat <- dat[dat$clade == "Actinopterygii", ]
+dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "chromnum.1n", "est.gnsz.Mbp", "asmblysize.Mbp")])
+dat <- dat[dat$clade == "Mammalia", ]
 
 # remove assembly with bloated assembly size
 dat <- dat[dat$species != "Callithrix jacchus", ]
@@ -22,15 +21,15 @@ dat <- dat[dat$species != "Callithrix jacchus", ]
 dat$w <- 1 - (abs(dat$asmblysize.Mbp - dat$est.gnsz.Mbp) / dat$est.gnsz.Mbp)
 
 # add an exponent to emphasize high quality genomes
-dat$w <- dat$w^20
+dat$w <- dat$w^10
 
 # model
-model <- glm(rsq ~ totalrep.prop + totalrep.prop:median.trans, weights = dat$w, data = dat)
+model <- glm(rsq ~ chromnum.1n + median.trans + median.trans:chromnum.1n, weights = dat$w, data = dat)
 
 # convert to plotting format
-x <- seq(min(dat$totalrep.prop), max(dat$totalrep.prop), length.out = 100)
-y <- seq(min(dat$median.trans), max(dat$median.trans), length.out = 100)
-grid <- expand.grid(totalrep.prop = x, median.trans = y)
+x <- seq(min(dat$median.trans), max(dat$median.trans), length.out = 100)
+y <- seq(min(dat$chromnum.1n), max(dat$chromnum.1n), length.out = 100)
+grid <- expand.grid(median.trans = x, chromnum.1n = y)
 grid$rsq <- predict(model, newdata = grid, type = "response")
 z <- matrix(grid$rsq, nrow = length(x), ncol = length(y))
 
@@ -44,8 +43,8 @@ image(x = x,
       xlab = "",
       ylab = "",
       main = "Title")
-mtext("Repeat content", side=1, line=2.5)
-mtext("Expansion recency", side=2, line=2.5)
+mtext("Expansion Recency", side=1, line=2.5)
+mtext("Chromosome Number", side=2, line=2.5)
 contour(x, 
         y, 
         z, 
@@ -64,38 +63,15 @@ image(1,
       yaxt = "n", 
       xlab = "", 
       ylab = "")
-#axis(4, 
-#     at = c(round(min(z), 2), 0.4, 0.6, 0.8, round(max(z), 2)), 
-#     labels = c(round(min(z), 2), 0.4, 0.6, 0.8, round(max(z), 2)))
 axis(4, at = pretty(z_range), labels = round(pretty(z_range), 2))
-mtext("Predicted variation", side=4, line=2.5)
-par(original)
+mtext("Predicted Consistency", side=4, line=2.5)
+par(mar = c(5.1, 4.1, 4.1, 2.1))
 
-# phylogenetic signal test (no phylogenetic signals within clades and none overall)
-library(phytools)
-tree <- read.tree("../data/vertebrates/formatted_tree.nwk")
-tree$tip.label <- gsub("_", " ", tree$tip.label)
-int <- intersect(dat$species, tree$tip.label)
-pruned.tree <- keep.tip(tree, int)
-pruned.dat <- dat[dat$species %in% int, ]
-pruned.model <- glm(pruned.dat$rsq ~ pruned.dat$totalrep.prop + pruned.dat$totalrep.prop:pruned.dat$median.trans, weights = pruned.dat$w)
-res <- setNames(resid(pruned.model), pruned.dat$species)
-phylosig.p <- phylosig(pruned.tree, res, method = "lambda", test = TRUE)[4]$P
 
-# color by points
-library(viridis)
+
+
+# color by weights
 cols <- viridis(length(unique(dat$w)), alpha = 0.45)[as.factor(dat$w)]
-plot(dat$totalrep.prop, 
-     dat$rsq,
-     col = cols,
-     pch = 16)
-abline(glm(dat$rsq ~ dat$totalrep.prop, weights = dat$w), col = "blue")
-abline(glm(dat$rsq ~ dat$totalrep.prop))
-legend("bottomright", 
-       legend = round(seq(min(dat$totalrep.prop), max(dat$totalrep.prop), length.out = 5), 2), 
-       fill = viridis(5), 
-       title = "Legend")
-
 plot(dat$median.trans, 
      dat$rsq,
      col = cols,
@@ -107,17 +83,27 @@ legend("bottomright",
        fill = viridis(5), 
        title = "Legend")
 
-plot(dat$median.trans * dat$totalrep.prop, 
+plot(dat$chromnum.1n, 
      dat$rsq,
      col = cols,
      pch = 16)
-term <- dat$median.trans * dat$totalrep.prop
-abline(glm(dat$rsq ~ term, weights = dat$w), col = "blue")
-abline(glm(dat$rsq ~ term))
+abline(glm(dat$rsq ~ dat$chromnum.1n, weights = dat$w), col = "blue")
+abline(glm(dat$rsq ~ dat$chromnum.1n))
 legend("bottomright", 
-       legend = round(seq(min(dat$median.trans * dat$totalrep.prop), max(dat$median.trans * dat$totalrep.prop), length.out = 5), 2), 
+       legend = round(seq(min(dat$median.trans), max(dat$chromnum.1n), length.out = 5), 2), 
        fill = viridis(5), 
        title = "Legend")
 
+plot(dat$median.trans * dat$chromnum.1n, 
+     dat$rsq,
+     col = cols,
+     pch = 16)
+term <- dat$median.trans * dat$chromnum.1n
+abline(glm(dat$rsq ~ term, weights = dat$w), col = "blue")
+abline(glm(dat$rsq ~ term))
+legend("bottomright", 
+       legend = round(seq(min(dat$median.trans * dat$chromnum.1n), max(dat$median.trans * dat$chromnum.1n), length.out = 5), 2), 
+       fill = viridis(5), 
+       title = "Legend")
 
 
