@@ -62,7 +62,7 @@ for (i in dat$species) {
   df <- data.frame(i, 
                    totalrep.Mbp,
                    totalrep.pct, 
-                   median,
+                   median
                    )
   repstats <- rbind(repstats, df)
 }
@@ -70,7 +70,7 @@ colnames(repstats)[1] <- "species"
 df <- merge(parsed, repstats, by = "species", all.x = TRUE)
 
 # reorganize and save results
-df <- df[, c(1:22, 27:29, 23:26)]
+df <- df[, c(1:23, 28:30, 24:27)]
 write.csv(df,
           "../results/parsed.csv", 
           row.names = FALSE)

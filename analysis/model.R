@@ -4,7 +4,7 @@
 
 library(viridis)
 # transform results
-dat <- read.csv("../results/vertebrates/parsed.csv")
+dat <- read.csv("../results/parsed.csv")
 dat <- dat[!duplicated(dat$species), ]
 dat <- dat[!is.na(dat$chromnum.1n), ]
 dat$median.trans <- 1 - (dat$median/70)
