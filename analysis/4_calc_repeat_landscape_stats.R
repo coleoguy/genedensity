@@ -5,10 +5,11 @@
 # characteristics for each species. saves one file with parsed
 # contigs and another file for parsed contigs
 
-parsed <- read.csv("../results/vertebrates/parsed.csv")
+parsed <- read.csv("../results/parsed.csv")
 
 # calculate stats
-files <- list.files("../results/vertebrates/repeat_landscape_divsums")
+# library(e1071)
+files <- list.files("../results/divsums")
 species <- gsub("_", " ", gsub(".divsum$", "", files))
 asmblysz <- unique(parsed[, c(1, 13)])
 asmblysz <- asmblysz[asmblysz$species %in% species, ]
@@ -20,7 +21,7 @@ for (i in dat$species) {
   asmblysz.Mbp <- dat[dat$species == i, ]$asmblysize.Mbp
   # read text file into lines
   divsum.vector <- readLines(
-    paste0("../results/vertebrates/repeat_landscape_divsums/", file))
+    paste0("../results/divsums/", file))
   # look for the start of relevant information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, divsum.vector) + 1
@@ -48,17 +49,21 @@ for (i in dat$species) {
   median <- which(cumsum(rep.pct) > sum(rep.pct)/2)[1]
   
   # unused
-  # mean <- sum(divergence*perdivrep.pct)/sum(perdivrep.pct)
-  # k <- kurtosis(perdivrep.pct)
-  # s <- skewness(perdivrep.pct)
-  # max <- max(perdivrep.pct)
-  # which <- which.max(perdivrep.pct)
+  # mean <- sum(divergence*rep.pct)/sum(rep.pct)
+  # k <- kurtosis(rep.pct)
+  # s <- skewness(rep.pct)
+  # max <- max(rep.pct)
+  # which <- which.max(rep.pct)
+  
+  # s <- skewness(rep.pct)
+  # k <- kurtosis(rep.pct)
   
   # build dataframe
   df <- data.frame(i, 
                    totalrep.Mbp,
                    totalrep.pct, 
-                   median)
+                   median,
+                   )
   repstats <- rbind(repstats, df)
 }
 colnames(repstats)[1] <- "species"
@@ -67,7 +72,7 @@ df <- merge(parsed, repstats, by = "species", all.x = TRUE)
 # reorganize and save results
 df <- df[, c(1:22, 27:29, 23:26)]
 write.csv(df,
-          "../results/vertebrates/parsed.csv", 
+          "../results/parsed.csv", 
           row.names = FALSE)
 
 

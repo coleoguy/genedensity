@@ -5,11 +5,11 @@
 # Description: Parses results and calculates additional statistics
 # to summarize contigs for each species
 
-dat <- read.csv("../data/vertebrates/data.csv")
+dat <- read.csv("../data/data.csv")
 
 # combine raw contig results
 library(data.table)
-dir <- "../results/vertebrates/individual_species_results"
+dir <- "../results/individual_species_results"
 files <- paste0(dir, "/",  list.files(dir))
 raw <- lapply(files, fread)
 raw <- as.data.frame(rbindlist((raw), fill = TRUE))
@@ -54,7 +54,7 @@ final[!(final$clade %in% c("Actinopterygii", "Mammalia", "Sauria")), ]$clade <- 
 final <- final[, c(1, 26, 2:11, 25, 12:24)]
 
 # write csv
-write.csv(final, "../results/vertebrates/parsed.csv", row.names = FALSE)
+write.csv(final, "../results/parsed.csv", row.names = FALSE)
 
 
 

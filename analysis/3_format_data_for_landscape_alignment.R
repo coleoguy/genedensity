@@ -6,8 +6,8 @@
 ## file contains species name and family
 
 library(ape)
-results <- read.csv("../results/vertebrates/parsed.csv")
-tree <- read.tree("../data/vertebrates/formatted_tree.nwk")
+results <- read.csv("../results/parsed.csv")
+tree <- read.tree("../data/formatted_tree.nwk")
 
 # drop species not in tree
 results <- unique(results[1:34])
@@ -22,12 +22,12 @@ results <- results[, c("species", "family")]
 results$species <- na.omit(gsub(" ", "_", results$species))
 
 # drop analyzed species
-sp.analyzed <- list.files("../results/vertebrates/repeat_landscape_divsums")
+sp.analyzed <- list.files("../results/divsums")
 sp.analyzed <- gsub(".divsum$", "", sp.analyzed)
 results <- results[!(results$species %in% sp.analyzed), ]
 
 write.table(results, 
-            paste0("../data/vertebrates/landsc_ref.csv"), 
+            paste0("../data/landsc_ref.csv"), 
             sep = ",", 
             col.names = FALSE, 
             row.names = FALSE,

@@ -16,8 +16,7 @@
 # contig by the size of each contig. The results for each species is saved in
 # its separate csv file
 
-# "vertebrates" or "invertebrates"?
-vert.invert <- "invertebrates"
+
 # verbose
 verbose <- F
 # keywords to match and exclude mitochondrial contigs for assembly size calcs
@@ -28,14 +27,14 @@ library(data.table)
 # source function
 source("functions.R")
 # load chromosome numbers
-chromnums <- read.csv(paste0("../data/", vert.invert, "/data.csv"))
+chromnums <- read.csv(paste0("../data/data.csv"))
 # list genome files
-genome.files <- list.files(paste0("../data/", vert.invert, "/genomes"))
+genome.files <- list.files(paste0("../data/genomes"))
 # pull species names from list of genome files
 all.species <- gsub("_", " ", unique(gsub("\\..*$", "", genome.files)))
 # list result files
 results <- list.files(
-  paste0("../results/", vert.invert, "/individual_species_results"))
+  paste0("../results/individual_species_results"))
 # pull species names from list of result files
 result.species <- gsub("_", " ", unique(gsub("\\..*$", "", results)))
 # begin loop

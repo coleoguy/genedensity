@@ -9,8 +9,8 @@ library(data.table)
 # verbose
 verbose <- F
 
-dat <- read.csv("../results/vertebrates/unparsed.csv")
-files <- list.files(paste0("../results/vertebrates/repeat_landscape_divsums"))
+dat <- read.csv("../results/unparsed.csv")
+files <- list.files(paste0("../results/divsums"))
 
 for (file in files) {
   # species name
@@ -21,7 +21,7 @@ for (file in files) {
     print(noquote(paste0(species, " (", Sys.time(), ")")))
   }
   # read text file into lines
-  divsum.vector <- readLines(paste0("../results/vertebrates/repeat_landscape_divsums/", 
+  divsum.vector <- readLines(paste0("../results/divsums/", 
                                     file))
   # look for the start of relevant information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
@@ -86,7 +86,7 @@ for (file in files) {
   # assemble dataframe for plotting
   final <- data.frame(species, divergence, totalength.Mbp, percent.cvrg, repeat.class)
   write.csv(final, 
-            paste0("../results/vertebrates/repeat_landscape_plotting/", 
+            paste0("../results/repeat_landscape_plotting/", 
                    gsub(" ", "_", species), 
                    ".csv"),
             row.names = FALSE)
@@ -95,11 +95,11 @@ for (file in files) {
   }
 }
 
-dir <- "../results/vertebrates/repeat_landscape_plotting"
+dir <- "../results/repeat_landscape_plotting"
 files <- paste0(dir, "/", list.files(dir))
 results.list <- lapply(files, fread)
 results.table <- na.omit(rbindlist(results.list, fill = TRUE))
-fwrite(results.table, paste0("../results/vertebrates/all_repeat_landscapes.csv"), row.names = FALSE)
+fwrite(results.table, paste0("../results/all_repeat_landscapes.csv"), row.names = FALSE)
 
 
 

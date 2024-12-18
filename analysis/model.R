@@ -11,7 +11,7 @@ dat$median.trans <- 1 - (dat$median/70)
 dat$totalrep.prop <- dat$totalrep.pct * 0.01
 
 # subset data
-dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "chromnum.1n", "est.gnsz.Mbp", "asmblysize.Mbp")])
+dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "totalrep.prop", "chromnum.1n", "est.gnsz.Mbp", "asmblysize.Mbp")])
 dat <- dat[dat$clade == "Mammalia", ]
 
 # remove assembly with bloated assembly size
@@ -91,6 +91,17 @@ abline(glm(dat$rsq ~ dat$chromnum.1n, weights = dat$w), col = "blue")
 abline(glm(dat$rsq ~ dat$chromnum.1n))
 legend("bottomright", 
        legend = round(seq(min(dat$median.trans), max(dat$chromnum.1n), length.out = 5), 2), 
+       fill = viridis(5), 
+       title = "Legend")
+
+plot(dat$totalrep.prop, 
+     dat$rsq,
+     col = cols,
+     pch = 16)
+abline(glm(dat$rsq ~ dat$totalrep.prop, weights = dat$w), col = "blue")
+abline(glm(dat$rsq ~ dat$totalrep.prop))
+legend("bottomright", 
+       legend = round(seq(min(dat$totalrep.prop), max(dat$totalrep.prop), length.out = 5), 2), 
        fill = viridis(5), 
        title = "Legend")
 

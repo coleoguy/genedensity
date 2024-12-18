@@ -6,8 +6,8 @@
 library(ape)
 library(dispRity)
 source("../analysis/functions.R")
-dat <- read.csv("../results/vertebrates/unparsed.csv")
-tree <- read.tree("../data/vertebrates/chordates_species.nwk")
+dat <- read.csv("../results/unparsed.csv")
+tree <- read.tree("../data/chordates_species.nwk")
 
 # format and prune tree
 sp <- unique(dat$species)
@@ -23,7 +23,7 @@ pruned.tree <- remove.zero.brlen(pruned.tree)
 # ultrametricize
 # pruned.tree <- chronos(pruned.tree)
 
-write.tree(pruned.tree, file = paste0("../data/vertebrates/formatted_tree.nwk"))
+write.tree(pruned.tree, file = paste0("../data/formatted_tree.nwk"))
 
 
 
