@@ -20,6 +20,64 @@ dat <- dat[dat$species != "Callithrix jacchus", ]
 # assign weights; weights approach 1 as assembly sizes approach genome sizes. weights tend toward 0 as assembly sizes deviate from genome sizes
 dat$w <- 1 - (abs(dat$asmblysize.Mbp - dat$est.gnsz.Mbp) / dat$est.gnsz.Mbp)
 
+# color by weights
+cols <- viridis(length(unique(dat$w)), alpha = 0.45)[as.factor(dat$w)]
+plot(dat$median.trans, 
+     dat$rsq,
+     col = cols,
+     pch = 16)
+abline(glm(dat$rsq ~ dat$median.trans, weights = dat$w), col = "blue")
+abline(glm(dat$rsq ~ dat$median.trans))
+legend("bottomright", 
+       legend = round(seq(min(dat$median.trans), max(dat$median.trans), length.out = 5), 2), 
+       fill = viridis(5), 
+       title = "Legend")
+
+plot(dat$chromnum.1n, 
+     dat$rsq,
+     col = cols,
+     pch = 16)
+abline(glm(dat$rsq ~ dat$chromnum.1n, weights = dat$w), col = "blue")
+abline(glm(dat$rsq ~ dat$chromnum.1n))
+legend("bottomright", 
+       legend = round(seq(min(dat$median.trans), max(dat$chromnum.1n), length.out = 5), 2), 
+       fill = viridis(5), 
+       title = "Legend")
+
+plot(dat$totalrep.prop, 
+     dat$rsq,
+     col = cols,
+     pch = 16)
+abline(glm(dat$rsq ~ dat$totalrep.prop, weights = dat$w), col = "blue")
+abline(glm(dat$rsq ~ dat$totalrep.prop))
+legend("bottomright", 
+       legend = round(seq(min(dat$totalrep.prop), max(dat$totalrep.prop), length.out = 5), 2), 
+       fill = viridis(5), 
+       title = "Legend")
+
+plot(dat$median.trans * dat$chromnum.1n, 
+     dat$rsq,
+     col = cols,
+     pch = 16)
+term <- dat$median.trans * dat$chromnum.1n
+abline(glm(dat$rsq ~ term, weights = dat$w), col = "blue")
+abline(glm(dat$rsq ~ term))
+legend("bottomright", 
+       legend = round(seq(min(dat$median.trans * dat$chromnum.1n), max(dat$median.trans * dat$chromnum.1n), length.out = 5), 2), 
+       fill = viridis(5), 
+       title = "Legend")
+
+
+
+
+
+
+
+
+
+
+
+
 # add an exponent to emphasize high quality genomes
 dat$w <- dat$w^10
 
@@ -70,51 +128,6 @@ par(mar = c(5.1, 4.1, 4.1, 2.1))
 
 
 
-# color by weights
-cols <- viridis(length(unique(dat$w)), alpha = 0.45)[as.factor(dat$w)]
-plot(dat$median.trans, 
-     dat$rsq,
-     col = cols,
-     pch = 16)
-abline(glm(dat$rsq ~ dat$median.trans, weights = dat$w), col = "blue")
-abline(glm(dat$rsq ~ dat$median.trans))
-legend("bottomright", 
-       legend = round(seq(min(dat$median.trans), max(dat$median.trans), length.out = 5), 2), 
-       fill = viridis(5), 
-       title = "Legend")
 
-plot(dat$chromnum.1n, 
-     dat$rsq,
-     col = cols,
-     pch = 16)
-abline(glm(dat$rsq ~ dat$chromnum.1n, weights = dat$w), col = "blue")
-abline(glm(dat$rsq ~ dat$chromnum.1n))
-legend("bottomright", 
-       legend = round(seq(min(dat$median.trans), max(dat$chromnum.1n), length.out = 5), 2), 
-       fill = viridis(5), 
-       title = "Legend")
-
-plot(dat$totalrep.prop, 
-     dat$rsq,
-     col = cols,
-     pch = 16)
-abline(glm(dat$rsq ~ dat$totalrep.prop, weights = dat$w), col = "blue")
-abline(glm(dat$rsq ~ dat$totalrep.prop))
-legend("bottomright", 
-       legend = round(seq(min(dat$totalrep.prop), max(dat$totalrep.prop), length.out = 5), 2), 
-       fill = viridis(5), 
-       title = "Legend")
-
-plot(dat$median.trans * dat$chromnum.1n, 
-     dat$rsq,
-     col = cols,
-     pch = 16)
-term <- dat$median.trans * dat$chromnum.1n
-abline(glm(dat$rsq ~ term, weights = dat$w), col = "blue")
-abline(glm(dat$rsq ~ term))
-legend("bottomright", 
-       legend = round(seq(min(dat$median.trans * dat$chromnum.1n), max(dat$median.trans * dat$chromnum.1n), length.out = 5), 2), 
-       fill = viridis(5), 
-       title = "Legend")
 
 
