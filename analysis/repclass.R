@@ -1,6 +1,7 @@
 
 
 
+library(viridis)
 files <- list.files("../results/divsums")
 sp <- gsub("_", " ", sub("\\..*", "", files))
 
@@ -26,7 +27,7 @@ for (i in 1:length(sp)) {
   table <- table[-drop2, ]
   table[, 3:5] <- sapply(table[, 3:5], as.numeric)
   table$score <- (table$absLen / asmb.bp) * (1 - (table$Kimura. / 100))
-  # table$Subclass <- sub(".*\\/", "", table$Class)
+  table$Subclass <- sub(".*\\/", "", table$Class)
   table$Class <- sub("/.*", "", table$Class)
   class <- c("LINE", "SINE", "LTR", "DNA", "RC", "Satellite")
   sums <- c()
@@ -39,11 +40,19 @@ for (i in 1:length(sp)) {
   DNA <- c(DNA, sums[4])
   RC <- c(RC, sums[5])
   satellite <- c(satellite, sums[6])
+  #anova.p <- summary(aov(table$Kimura. ~ table$Class))[[1]][1, 5]
+  #if (anova.p < 0.05) {
+  #  tukey.p <- TukeyHSD(aov(table$Kimura. ~ table$Class))[[1]][, 4]
+  #  sig <- names(tukey.p[tukey.p < 0.05])
+  #  known <- sig[!grepl("Unknown", sig)]
+  #  known <- sort(unique(unlist(strsplit(known, "-"))))
+  #}
 }
 df <- data.frame(species, clade, LINE, SINE, LTR, DNA, RC, satellite)
 
 df$rsq <- dat$rsq
 df$w <- 1 - (abs(dat$asmblysize.Mbp - dat$est.gnsz.Mbp) / dat$est.gnsz.Mbp)
+df$w <- df$w^10
 df <- na.omit(df)
 df <- df[df$w >= 0, ]
 
@@ -59,6 +68,7 @@ plot(df$LINEn,
      pch = 16)
 abline(glm(rsq ~ LINEn, data = df, weight = w))
 summary(glm(rsq ~ LINEn, data = df, weight = w))
+
 
 df$SINEn <- (df$SINE - min(df$SINE)) / (max(df$SINE) - min(df$SINE))
 cols <- viridis(length(unique(df$w)), alpha = 0.45)[as.factor(df$w)]
