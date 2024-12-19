@@ -20,7 +20,7 @@ repstats <- data.frame()
 for (i in 1:length(sp)) {
   species <- sp[i]
   # read text file into lines
-  lines <- readLines(paste0("../results/divsums/", files[1]))
+  lines <- readLines(paste0("../results/divsums/", files[i]))
   # look for the start of relevant information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, lines) + 1
