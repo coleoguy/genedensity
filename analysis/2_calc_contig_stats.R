@@ -36,7 +36,7 @@ for (species in sp) {
     weightmean <- sum(sub$genedens * sub$size.Mbp) / sum(sub$size.Mbp)
     weightsd <- sqrt(sum(sub$size.Mbp * (sub$genedens - weightmean)^2) / sum(sub$size.Mbp))
     weightcv <- weightsd / weightmean
-    chromsd <- sd(sub$ size.Mbp)
+    chromsd <- sd(sub$size.Mbp)/mean(sub$size.Mbp)
     contig.stats <- data.frame(species, beta, meangd, sdgd, pval.beta, rsq, cor, weightmean, weightsd, weightcv, chromsd)
   } else {
     beta <- meangd <- sdgd <- pval.beta <- rsq <- cor <- weightmean <- weightsd <- weightcv <- chromsd <- NA

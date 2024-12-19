@@ -5,46 +5,41 @@
 # characteristics for each species. saves one file with parsed
 # contigs and another file for parsed contigs
 
-parsed <- read.csv("../results/parsed.csv")
-
 # calculate stats
 # library(e1071)
 files <- list.files("../results/divsums")
-species <- gsub("_", " ", gsub(".divsum$", "", files))
-asmblysz <- unique(parsed[, c(1, 13)])
-asmblysz <- asmblysz[asmblysz$species %in% species, ]
-asmblysz <- asmblysz[order(asmblysz$species == species), ]
-dat <- data.frame(asmblysz, files)
+sp <- gsub("_", " ", gsub(".divsum$", "", files))
+
+dat <- read.csv("../results/parsed.csv")
+asmbsz <- dat[!duplicated(dat$species), ]
+asmbsz <- asmbsz[asmbsz$species %in% sp, ]
+asmbsz <- asmbsz[order(asmbsz$species == sp), ]
+asmbsz <- asmbsz$asmblysize.Mbp*1000000
+
 repstats <- data.frame()
-for (i in dat$species) {
-  file <- dat[dat$species == i, ]$files
-  asmblysz.Mbp <- dat[dat$species == i, ]$asmblysize.Mbp
+for (i in 1:length(sp)) {
+  species <- sp[i]
   # read text file into lines
-  divsum.vector <- readLines(
-    paste0("../results/divsums/", file))
+  lines <- readLines(paste0("../results/divsums/", files[1]))
   # look for the start of relevant information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
-  start.index <- match(phrase, divsum.vector) + 1
+  start.index <- match(phrase, lines) + 1
   # condense relevant lines into a table
-  divsum.vector <- divsum.vector[start.index:length(divsum.vector)]
-  divsum.table <- read.table(textConnection(divsum.vector), 
+  lines <- lines[start.index:length(lines)]
+  table <- read.table(textConnection(lines), 
                              sep = " ", 
                              header = TRUE)
   # drop NA columns
-  divsum.table <- divsum.table[
-    -c(which(sapply(divsum.table, function(col) all(is.na(col)))))]
+  table <- table[-c(which(sapply(table, function(col) all(is.na(col)))))]
   # vector of divergence scores
-  divergence <- divsum.table$Div
+  div <- table$Div
   # vector of the repeat content of each divergence score
-  rep.bp <- rowSums(divsum.table[, !names(divsum.table) == "Div"])
-  
+  rep.bp <- rowSums(table[, !names(table) == "Div"])
   # repeat content in Mbp
   totalrep.Mbp <- sum(rep.bp) / 1000000
-  
   # repeat content in percent coverage
-  rep.pct <- 0.0001 * (rep.bp / asmblysz.Mbp) # 0.0001% = (bp / Mbp) * (1 Mbp / 1000000 bp) * (100%) 
+  rep.pct <- 0.0001 * (rep.bp / asmbsz[i]) # 0.0001% = (bp / Mbp) * (1 Mbp / 1000000 bp) * (100%) 
   totalrep.pct <- sum(rep.pct)
-  
   # divergence bin with median repeat
   median <- which(cumsum(rep.pct) > sum(rep.pct)/2)[1]
   
@@ -54,20 +49,18 @@ for (i in dat$species) {
   # s <- skewness(rep.pct)
   # max <- max(rep.pct)
   # which <- which.max(rep.pct)
-  
   # s <- skewness(rep.pct)
   # k <- kurtosis(rep.pct)
   
   # build dataframe
-  df <- data.frame(i, 
+  df <- data.frame(species, 
                    totalrep.Mbp,
                    totalrep.pct, 
                    median
                    )
   repstats <- rbind(repstats, df)
 }
-colnames(repstats)[1] <- "species"
-df <- merge(parsed, repstats, by = "species", all.x = TRUE)
+df <- merge(dat, repstats, by = "species", all.x = TRUE)
 
 # reorganize and save results
 df <- df[, c(1:23, 28:30, 24:27)]
