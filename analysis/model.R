@@ -20,7 +20,7 @@ dat <- dat[dat$species != "Callithrix jacchus", ]
 # assign weights; weights approach 1 as assembly sizes approach genome sizes. weights tend toward 0 as assembly sizes deviate from genome sizes
 dat$w <- 1 - (abs(dat$asmblysize.Mbp - dat$est.gnsz.Mbp) / dat$est.gnsz.Mbp)
 
-# color by weights
+# median
 cols <- viridis(length(unique(dat$w)), alpha = 0.45)[as.factor(dat$w)]
 plot(dat$median.trans, 
      dat$rsq,
@@ -33,17 +33,7 @@ legend("bottomright",
        fill = viridis(5), 
        title = "Legend")
 
-plot(dat$chromnum.1n, 
-     dat$rsq,
-     col = cols,
-     pch = 16)
-abline(glm(dat$rsq ~ dat$chromnum.1n, weights = dat$w), col = "blue")
-abline(glm(dat$rsq ~ dat$chromnum.1n))
-legend("bottomright", 
-       legend = round(seq(min(dat$median.trans), max(dat$chromnum.1n), length.out = 5), 2), 
-       fill = viridis(5), 
-       title = "Legend")
-
+# totsl repeat
 plot(dat$totalrep.prop, 
      dat$rsq,
      col = cols,
@@ -55,15 +45,16 @@ legend("bottomright",
        fill = viridis(5), 
        title = "Legend")
 
-plot(dat$median.trans * dat$chromnum.1n, 
+# product of total repeat and median
+plot(dat$median.trans * dat$totalrep.prop,  
      dat$rsq,
      col = cols,
      pch = 16)
-term <- dat$median.trans * dat$chromnum.1n
+term <- dat$median.trans * dat$totalrep.prop
 abline(glm(dat$rsq ~ term, weights = dat$w), col = "blue")
 abline(glm(dat$rsq ~ term))
 legend("bottomright", 
-       legend = round(seq(min(dat$median.trans * dat$chromnum.1n), max(dat$median.trans * dat$chromnum.1n), length.out = 5), 2), 
+       legend = round(seq(min(dat$median.trans * dat$totalrep.prop), max(dat$median.trans * dat$totalrep.prop), length.out = 5), 2), 
        fill = viridis(5), 
        title = "Legend")
 
@@ -82,6 +73,7 @@ sum(dat$w)
 dat$w <- dat$w^5
 
 sum(dat$w)
+hist(dat$w)
 
 # model
 model <- glm(rsq ~ chromnum.1n + median.trans + median.trans:chromnum.1n, weights = dat$w, data = dat)
