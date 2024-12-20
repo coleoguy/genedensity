@@ -38,7 +38,7 @@ for (i in 1:length(sp)) {
   # repeat content in Mbp
   totalrep.Mbp <- sum(rep.bp) / 1000000
   # repeat content in percent coverage
-  rep.pct <- 0.0001 * (rep.bp / asmbsz[i]) # 0.0001% = (bp / Mbp) * (1 Mbp / 1000000 bp) * (100%) 
+  rep.pct <- (rep.bp / asmbsz[i]) * 100
   totalrep.pct <- sum(rep.pct)
   # divergence bin with median repeat
   median <- which(cumsum(rep.pct) > sum(rep.pct)/2)[1]
