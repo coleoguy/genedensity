@@ -75,11 +75,13 @@ legend("bottomright",
 
 
 
-
-
+# average number of complete genomes
+sum(dat$w)
 
 # add an exponent to emphasize high quality genomes
-dat$w <- dat$w^10
+dat$w <- dat$w^5
+
+sum(dat$w)
 
 # model
 model <- glm(rsq ~ chromnum.1n + median.trans + median.trans:chromnum.1n, weights = dat$w, data = dat)
