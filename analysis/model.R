@@ -86,7 +86,6 @@ grid$rsq <- predict(model, newdata = grid, type = "response")
 z <- matrix(grid$rsq, nrow = length(x), ncol = length(y))
 
 # plot
-original <- par(no.readonly = TRUE)
 par(mar = c(4, 4, 3, 8) + 0.1)
 image(x = x, 
       y = y, 
