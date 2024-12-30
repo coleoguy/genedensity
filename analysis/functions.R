@@ -3,17 +3,27 @@
 ## contig sizes of a species. gets the assembly size by summing the sizes of 
 ## all contigs except those identified by mitochondrial keywords. drops all but 
 ## the 2N longest contigs and outputs the results as a datatable
-dataFromFasta <- function(fasta.path, chromnum.1n, mito.keywords, verbose) {
-  # load fasta file as a vector
-  fasta <- fread(fasta.path, header = FALSE, showProgress = verbose)$V1
-  # get indices for the fasta vector
-  header.ind <- which(grepl("^>", fasta))
-  # get headers from fasta vector
-  header <- fasta[header.ind]
-  # get contig sizes from each header
-  size.Mbp <- as.numeric(sub(".*:([0-9]+):1 REF", "\\1", header)) / 1000000
-  # get contig names from each header
-  name <- sub(">\\s*([^ ]+).*", "\\1", header)
+dataFromFasta <- function(fasta.path, chromnum.1n, mito.keywords, verbose, ensembl) {
+  if (ensembl == TRUE) {
+    # load fasta file as a vector
+    fasta <- fread(fasta.path, header = FALSE, showProgress = verbose)$V1
+    # get indices for the fasta vector
+    header.ind <- which(grepl("^>", fasta))
+    # get headers from fasta vector
+    header <- fasta[header.ind]
+    # get contig sizes from each header
+    size.Mbp <- as.numeric(sub(".*:([0-9]+):1 REF", "\\1", header)) / 1000000
+    # get contig names from each header
+    name <- sub(">\\s*([^ ]+).*", "\\1", header)
+  } else {
+    fasta <- read.fasta(fasta.path)
+    size.bp <- c()
+    for (i in 1:length(fasta)) {
+      size.bp <- c(size.bp, length(fasta[[i]]))
+    }
+    size.Mbp <- size.bp / 1000000
+    name <- names(fasta)
+  }
   # get assembly size from all contigs excluding mitochondrial
   mito.indices <- which(!tolower(name) %in% mito.keywords)
   asmblysize.Gbp <- sum(na.omit(size.Mbp[mito.indices])) / 1000
@@ -32,9 +42,9 @@ dataFromFasta <- function(fasta.path, chromnum.1n, mito.keywords, verbose) {
 ## genes in the assembly by counting the number of rows in the gtf minus the
 ## rows with contig names that match the mitochondrial keywords. outputs the
 ## results as a datatable
-dataFromGtf <- function(gtf.file.path, name, mito.keywords, verbose) {
+dataFromGtf <- function(annot.path, name, mito.keywords, verbose, annot) {
   # read gtf
-  gtf <- read.table(gtf.file.path, header = TRUE, sep = "\t")
+  gtf <- read.table(annot.path, header = TRUE, sep = "\t")
   # filter for genes only
   gtf <- gtf[which(gtf[, 3] == "gene"), ]
   # get the number of genes in each contig

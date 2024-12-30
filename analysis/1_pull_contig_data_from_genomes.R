@@ -19,11 +19,14 @@
 
 # verbose
 verbose <- F
+# is ensembl genome? setting to TRUE will run much faster
+ensembl <- F
 # keywords to match and exclude mitochondrial contigs for assembly size calcs
 mito.keywords <- c("mt", "mito", "mitochondrial", "nonchromosomal")
 
 # load library
 library(data.table)
+library(seqinr)
 # source function
 source("functions.R")
 # load chromosome numbers
@@ -57,20 +60,16 @@ for (species in all.species) {
     } 
     # create full paths for files. sort alphabetically to place
     # the fasta file in front of the gff3/gtf file
-    genome.files <- sort(paste0("../data/", 
-                                vert.invert, 
-                                "/genomes/", 
-                                list.files(paste0("../data/", 
-                                                  vert.invert, 
-                                                  "/genomes"), 
+    genome.files <- sort(paste0("../data/genomes/", 
+                                list.files(paste0("../data/genomes"), 
                                            gsub(" ", "_", species))))
-    # assume the first file to be the fasta
+    # assume first file is fasta
     fasta.path <- genome.files[1]
-    # assume the second file to be the gtf/gff3
-    gtf.path <- genome.files[2]
+    # assume second file is gff3/gtf/gbff
+    annot.path <- genome.files[2]
     # read fasta
     fasta.data <- dataFromFasta(
-      fasta.path, chromnum.1n, mito.keywords, verbose)
+      fasta.path, chromnum.1n, mito.keywords, verbose, ensembl)
     name <- fasta.data$name
     size.Mbp <- fasta.data$size.Mbp
     asmblysize.Gbp <- unique(fasta.data$asmblysize.Gbp)
@@ -78,7 +77,7 @@ for (species in all.species) {
     gc()
     if (length(name) != 0) {
       # read gtf/gff3
-      genecount <- dataFromGtf(gtf.path, name, mito.keywords, verbose)
+      genecount <- dataFromGtf(annot.path, name, mito.keywords, verbose, annot)
       # proceed if gene count is available for more than one contig
       if (sum(is.na(genecount)) < length(name)) {
         # assemble datatable
@@ -96,9 +95,7 @@ for (species in all.species) {
           asmblysize.Gbp
         )
         # write results
-        result.path <- paste0("../results/", 
-                              vert.invert, 
-                              "/individual_species_results/", 
+        result.path <- paste0("../results/individual_species_results/", 
                               gsub(" ", "_", species), 
                               ".csv")
         fwrite(dat, file = result.path, row.names = FALSE)
@@ -109,7 +106,7 @@ for (species in all.species) {
         # prompt to be displayed when sequence names in fasta and annotation 
         # files do not match
         if (verbose == TRUE) {
-          print(noquote("   Aborted (sequence names in gtf/gff3 and fasta do not match)"))
+          print(noquote("   Aborted (sequence names in gtf and fasta do not match)"))
         }
       }
     } else {
