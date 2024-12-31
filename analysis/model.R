@@ -5,20 +5,61 @@
 library(viridis)
 # transform results
 dat <- read.csv("../results/parsed.csv")
+d <- dat
 dat <- dat[!duplicated(dat$species), ]
 dat <- dat[!is.na(dat$chromnum.1n), ]
 dat$median.trans <- 1 - (dat$median/70)
 dat$totalrep.prop <- dat$totalrep.pct * 0.01
+contigs <- c()
+for (h in dat$species) {
+  sub <- d[d$species == h, ]
+  contigs <- c(contigs, nrow(sub))
+}
+dat$contigs <- contigs
 
 # subset data
-dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "totalrep.prop", "chromnum.1n", "est.gnsz.Mbp", "asmblysize.Mbp")])
+dat <- na.omit(dat[, c("species", "rsq", "class", "order", "family", "clade", "median.trans", "totalrep.prop", "chromnum.1n", "est.gnsz.Mbp", "asmblysize.Mbp", "contigs")])
 dat <- dat[dat$clade == "Mammalia", ]
+
+# marsupials?
+mars <- c()
+for (g in 1:nrow(dat)) {
+  if (dat[g, ]$order %in% c("Didelphimorphia", 
+                            "Paucituberculata", 
+                            "Microbiotheria",
+                            "Dasyuromorphia", 
+                            "Notoryctemorphia",
+                            "Peramelemorphia", 
+                            "Diprotodontia")){
+    mars <- c(mars, TRUE)
+    
+  } else {
+    mars <- c(mars, FALSE)
+  }
+}
+dat$mars <- mars
 
 # remove assembly with bloated assembly size
 dat <- dat[dat$species != "Callithrix jacchus", ]
 
 # assign weights; weights approach 1 as assembly sizes approach genome sizes. weights tend toward 0 as assembly sizes deviate from genome sizes
 dat$w <- 1 - (abs(dat$asmblysize.Mbp - dat$est.gnsz.Mbp) / dat$est.gnsz.Mbp)
+
+# marsupials
+mars <- dat[, c("species", "mars", "rsq", "order")]
+mars <- mars[mars$order != "Monotrema", ]
+obs.diff <- mean(mars[mars$mars == TRUE, ]$rsq) - mean(mars[mars$mars == FALSE, ]$rsq)
+null.diff <- c()
+for (f in 1:10000) {
+  null <- sample(mars)
+  null.diff <- c(null.diff, mean(null[null$mars == TRUE, ]$rsq) - mean(null[null$mars == FALSE, ]$rsq))
+}
+p <- mean(abs(null.diff) >= abs(obs.diff))
+print(paste0("p = ", p))
+# nope
+
+
+
 
 # median
 cols <- viridis(length(unique(dat$w)), alpha = 0.45)[as.factor(dat$w)]
@@ -78,7 +119,7 @@ hist(dat$w)
 # model
 model <- glm(rsq ~ chromnum.1n + median.trans + median.trans:chromnum.1n, weights = dat$w, data = dat)
 
-# convert to plotting format
+# generate model predictions and format results
 x <- seq(min(dat$median.trans), max(dat$median.trans), length.out = 100)
 y <- seq(min(dat$chromnum.1n), max(dat$chromnum.1n), length.out = 100)
 grid <- expand.grid(median.trans = x, chromnum.1n = y)
@@ -86,7 +127,7 @@ grid$rsq <- predict(model, newdata = grid, type = "response")
 z <- matrix(grid$rsq, nrow = length(x), ncol = length(y))
 
 # plot
-par(mar = c(4, 4, 3, 8) + 0.1)
+par(mar = c(4, 4, 3, 8))
 image(x = x, 
       y = y, 
       z = z, 

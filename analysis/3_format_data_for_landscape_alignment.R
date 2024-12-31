@@ -10,7 +10,7 @@ results <- read.csv("../results/parsed.csv")
 tree <- read.tree("../data/formatted_tree.nwk")
 
 # drop species not in tree
-results <- unique(results[1:34])
+results <- results[!duplicated(results$species), ]
 sp <- intersect(results$species, gsub("_", " ", tree$tip.label))
 results <- results[results$species %in% sp, ]
 
