@@ -1,4 +1,14 @@
 
+# note: new parsing method kept 20 mammals and rsq~transformed median has slope -1.7443 and p value 0.01840; no need to exponentiate weights
+# the 20 mammals consist of 5 Artiodactyla,   
+# 4 Carnivora, 
+# 1 Didelphimorphiam, 
+# 2 Perissodactyla, 
+# 6 Primates,
+# 1 Probosciea, 
+# and 1 Rodentia
+# what about other clades?
+
 
 # Model for mammals
 
@@ -163,5 +173,22 @@ par(mar = c(5.1, 4.1, 4.1, 2.1))
 
 
 
+# group species by very low chromosome numbers or very complete genomes
+wgroup <- chromgroup <- c()
+for (i in 1:nrow(dat)) {
+  if (dat[i, ]$w >= 0.95) {
+    wgroup <- c(wgroup, T)
+  } else {
+    wgroup <- c(wgroup, F)
+  }
+  if (dat[i, ]$chromnum.1n <= 10) {
+    chromgroup <- c(chromgroup, T)
+  } else {
+    chromgroup <- c(chromgroup, F)
+  }
+}
 
-
+# tests
+dat$wgroup <- wgroup
+dat$chromgroup <- chromgroup
+wilcox.test(w ~ chromgroup, data = dat)
