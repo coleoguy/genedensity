@@ -1,6 +1,6 @@
 
 # before pgls: new parsing method kept 21 mammals and rsq~transformed median has slope -1.6988 and p value 0.016207; no need to exponentiate weights
-# after pgls: 20 species, beta = 1.747489, p = 0.0183
+# after pgls: 20 species, beta = 1.747489, p = 0.0183, r2 = 0.2731145, predicted rsq diff between highest and lowest medians: 0.37446190
 # what about other clades?
 
 # Model for mammals
@@ -202,4 +202,7 @@ library(nlme)
 summary(gls(rsq ~ median.trans, 
              weights = varFixed(~w), 
              data = dat1))
-
+library(piecewiseSEM)
+rsquared(gls(rsq ~ median.trans, 
+             weights = varFixed(~w), 
+             data = dat1))
