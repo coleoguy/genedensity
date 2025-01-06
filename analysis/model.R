@@ -1,6 +1,6 @@
 
-# note: new parsing method kept 21 mammals and rsq~transformed median has slope -1.6988 and p value 0.016207; no need to exponentiate weights
-# model predicts an rsq difference of 0.36402 between the highest-median mammal and the lowest-median mammal
+# before pgls: new parsing method kept 21 mammals and rsq~transformed median has slope -1.6988 and p value 0.016207; no need to exponentiate weights
+# after pgls: beta = -1.990920, p = 0.0084
 # what about other clades?
 
 # Model for mammals
@@ -185,3 +185,21 @@ for (i in 1:nrow(dat)) {
 dat$wgroup <- wgroup
 dat$chromgroup <- chromgroup
 wilcox.test(w ~ chromgroup, data = dat)
+
+
+
+library(phytools)
+tree <- read.tree("../data/formatted_tree.nwk")
+tree$tip.label <- gsub("_", " ", tree$tip.label)
+int <- intersect(tree$tip.label, dat$species)
+pruned.tree <- keep.tip(tree, int)
+dat1 <- dat[dat$species %in% int, ]
+dat1 <- dat1[match(pruned.tree$tip.label, dat1$species), ]
+model <- glm(rsq ~ median.trans, weights = w, data = dat1)
+res <- setNames(resid(model), dat1$species)
+phylosig(pruned.tree, res, method="lambda", test=TRUE)
+library(nlme)
+summary(gls(rsq ~ median.trans, 
+             weights = varFixed(~w), 
+             data = dat1))
+
