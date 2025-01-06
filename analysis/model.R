@@ -1,6 +1,6 @@
 
 # before pgls: new parsing method kept 21 mammals and rsq~transformed median has slope -1.6988 and p value 0.016207; no need to exponentiate weights
-# after pgls: beta = -1.990920, p = 0.0084
+# after pgls: 20 species, beta = 1.747489, p = 0.0183
 # what about other clades?
 
 # Model for mammals
