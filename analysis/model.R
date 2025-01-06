@@ -1,14 +1,7 @@
 
-# note: new parsing method kept 20 mammals and rsq~transformed median has slope -1.7443 and p value 0.01840; no need to exponentiate weights
-# the 20 mammals consist of 5 Artiodactyla,   
-# 4 Carnivora, 
-# 1 Didelphimorphiam, 
-# 2 Perissodactyla, 
-# 6 Primates,
-# 1 Probosciea, 
-# and 1 Rodentia
+# note: new parsing method kept 21 mammals and rsq~transformed median has slope -1.6988 and p value 0.016207; no need to exponentiate weights
+# model predicts an rsq difference of 0.36402 between the highest-median mammal and the lowest-median mammal
 # what about other clades?
-
 
 # Model for mammals
 

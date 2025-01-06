@@ -19,16 +19,12 @@ raw <- raw[raw$size.Mbp >= 10, ]
 
 # test new method
 parsed <- data.frame()
-for (z in unique(dat$species)) {
+for (z in unique(raw$species)) {
   sub <- raw[raw$species == z, ]
-  total <- sum(sub$size.Mbp)
-  est <- dat[dat$species == z, ]$est.gnsz.Mbp
-  if (is.na(est) == TRUE) {
-    next
-  } else {
-    if (total/est >= 0.5) {
-      parsed <- rbind(parsed, sub)
-    }
+  cont <- sum(sub$size.Mbp)
+  total <- raw[raw$species == z, ]$asmblysize[1]
+  if (cont/total >= 0.8) {
+    parsed <- rbind(parsed, sub)
   }
 }
 
