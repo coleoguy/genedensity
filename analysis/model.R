@@ -3,7 +3,49 @@
 # after pgls: 20 species, beta = 1.747489, p = 0.0183, r2 = 0.2731145, predicted rsq diff between highest and lowest medians: 0.37446190
 # what about other clades?
 
-# Model for mammals
+
+# new model
+library(viridis)
+dat <- read.csv("../results/parsed.csv")
+d <- dat
+dat <- dat[!duplicated(dat$species), ]
+dat <- dat[!is.na(dat$chromnum.1n), ]
+dat$median.trans <- 1 - (dat$median/70)
+dat$totalrep.prop <- dat$totalrep.pct * 0.01
+dat <- na.omit(dat[, c("species", "rsq", "class", "order", "family", "clade", "median.trans", "totalrep.prop", "chromnum.1n", "est.gnsz.Mbp", "asmblysize.Mbp")])
+dat <- dat[dat$clade == "Mammalia", ]
+dat <- dat[dat$species != "Callithrix jacchus", ]
+library(phytools)
+tree <- read.tree("../data/formatted_tree.nwk")
+tree$tip.label <- gsub("_", " ", tree$tip.label)
+int <- intersect(tree$tip.label, dat$species)
+pruned.tree <- keep.tip(tree, int)
+dat1 <- dat[dat$species %in% int, ]
+dat1 <- dat1[match(pruned.tree$tip.label, dat1$species), ]
+model <- glm(rsq ~ median.trans, data = dat1)
+res <- setNames(resid(model), dat1$species)
+phylosig(pruned.tree, res, method="lambda", test=TRUE)
+library(nlme)
+summary(gls(rsq ~ median.trans, 
+            data = dat1))
+library(piecewiseSEM)
+rsquared(gls(rsq ~ median.trans, 
+             data = dat1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# old stuff
 
 library(viridis)
 # transform results
