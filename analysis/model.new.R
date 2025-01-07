@@ -5,13 +5,10 @@
 
 
 # new model
-library(viridis)
 dat <- read.csv("../results/parsed.csv")
-d <- dat
 dat <- dat[!duplicated(dat$species), ]
 dat <- dat[!is.na(dat$chromnum.1n), ]
 dat$median.trans <- 1 - (dat$total.rep.median/70)
-dat$totalrep.prop <- dat$total.rep.pct * 0.01
 dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans")])
 dat <- dat[dat$clade == "Mammalia", ]
 dat <- dat[dat$species != "Callithrix jacchus", ]
@@ -33,15 +30,10 @@ rsquared(gls(rsq ~ median.trans,
              data = dat1))
 
 
-
-
-
-
 qwert <- list()
 classes <- c("total", "line", "sine", "ltr", "dna", "rc")
 for (qwe in classes) {
   dat <- read.csv("../results/parsed.csv")
-  d <- dat
   dat <- dat[!duplicated(dat$species), ]
   dat <- dat[!is.na(dat$chromnum.1n), ]
   dat$median.trans <- 1 - (dat[[paste0(qwe, ".rep.median")]]/70)

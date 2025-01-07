@@ -1,5 +1,16 @@
 
-# slope sig rsq
+
+# for total, line, ltr, dna, rc, increasing threshold does not affect significance
+# until threshold > 0.8, after which significance becomes unstable and increases 
+# sharply. this is because analyzing these repeat types requires PGLS, which in
+# turn bottlenecks sample size to the same ~48 species due to the requirement of
+# intersecting species. This pattern is not observed in SINEs, which show no
+# phylogenetic signals in their model residuals (p = 0.5) and are therefore not 
+# constrained by the matching species requirement.
+
+
+
+
 
 qwerty <- data.frame()
 for (qw in (0:97)*0.01) {
@@ -191,10 +202,8 @@ for (qw in (0:97)*0.01) {
   qwerty <- rbind(qwerty, as.data.frame(qwert))
 }
 
-
-df <- data.frame(c((0:97)*0.01), aaa, bbb, ccc)
-names(df) <- c("number", "beta", "p", "rsq")
-write.csv(df, file = "../results/number.csv", row.names = F)
+qwerty <- qwerty[, c(19, 1:18)]
+write.csv(qwerty, file = "../results/number.csv", row.names = F)
 df <- read.csv("../results/number.csv")
 
 
