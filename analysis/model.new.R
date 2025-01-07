@@ -1,8 +1,5 @@
 
-# before pgls: new parsing method kept 21 mammals and rsq~transformed median has slope -1.6988 and p value 0.016207; no need to exponentiate weights
-# after pgls: 20 species, beta = 1.747489, p = 0.0183, r2 = 0.2731145, predicted rsq diff between highest and lowest medians: 0.37446190
-# what about other clades?
-
+# SINEs: 
 
 # new model
 dat <- read.csv("../results/parsed.csv")
@@ -64,6 +61,70 @@ for (qwe in classes) {
   }
 }
 qwert <- as.data.frame(qwert)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#best model for SINEs according to step(); only the median is significant
+
+# model
+model <- glm(formula = rsq ~ median.trans + chromnum.1n + median.trans:chromnum.1n, data = dat)
+
+# convert to plotting format
+x <- seq(min(dat$median.trans), max(dat$median.trans), length.out = 100)
+y <- seq(min(dat$chromnum.1n), max(dat$chromnum.1n), length.out = 100)
+grid <- expand.grid(median.trans = x, chromnum.1n = y)
+grid$rsq <- predict(model, newdata = grid, type = "response")
+z <- matrix(grid$rsq, nrow = length(x), ncol = length(y))
+
+# plot
+par(mar = c(4, 4, 3, 8) + 0.1)
+image(x = x, 
+      y = y, 
+      z = z, 
+      col = viridis(100), 
+      xlab = "",
+      ylab = "",
+      main = "Title")
+mtext("expansion recency", side=1, line=2.5)
+mtext("chromosome number", side=2, line=2.5)
+contour(x, 
+        y, 
+        z, 
+        add = TRUE,
+        col = "black", 
+        lwd = 1,
+        drawlabels = FALSE)
+par(new = TRUE)
+par(mar = c(4, 25, 3, 6))
+z_range <- seq(min(z), max(z), length.out = 100)
+image(1, 
+      z_range, 
+      t(matrix(z_range)), 
+      col = viridis(100), 
+      xaxt = "n",
+      yaxt = "n", 
+      xlab = "", 
+      ylab = "")
+#axis(4, 
+#     at = c(round(min(z), 2), 0.4, 0.6, 0.8, round(max(z), 2)), 
+#     labels = c(round(min(z), 2), 0.4, 0.6, 0.8, round(max(z), 2)))
+axis(4, at = pretty(z_range), labels = round(pretty(z_range), 2))
+mtext("Predicted consistency", side=4, line=2.5)
+par(mar = c(5, 4, 4, 2))
+
+
 
 
 
