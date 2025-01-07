@@ -6,15 +6,13 @@
 # contigs and another file for parsed contigs
 
 # calculate stats
-# library(e1071)
 files <- list.files("../results/divsums")
 sp <- gsub("_", " ", gsub(".divsum$", "", files))
 
 dat <- read.csv("../results/parsed.csv")
 asmbsz <- dat[!duplicated(dat$species), ]
 asmbsz <- asmbsz[asmbsz$species %in% sp, ]
-asmbsz <- asmbsz[order(asmbsz$species == sp), ]
-asmbsz <- asmbsz$asmblysize.Mbp*1000000
+asmbsz <- setNames(asmbsz$asmblysize.Mbp*1000000, asmbsz$species)
 
 repstats <- data.frame()
 for (i in 1:length(sp)) {
@@ -31,39 +29,51 @@ for (i in 1:length(sp)) {
                              header = TRUE)
   # drop NA columns
   table <- table[-c(which(sapply(table, function(col) all(is.na(col)))))]
-  # vector of divergence scores
-  div <- table$Div
-  # vector of the repeat content of each divergence score
-  rep.bp <- rowSums(table[, !names(table) == "Div"])
-  # repeat content in Mbp
-  totalrep.Mbp <- sum(rep.bp) / 1000000
-  # repeat content in percent coverage
-  rep.pct <- (rep.bp / asmbsz[i]) * 100
-  totalrep.pct <- sum(rep.pct)
-  # divergence bin with median repeat
-  median <- which(cumsum(rep.pct) > sum(rep.pct)/2)[1]
   
-  # unused
-  # mean <- sum(divergence*rep.pct)/sum(rep.pct)
-  # k <- kurtosis(rep.pct)
-  # s <- skewness(rep.pct)
-  # max <- max(rep.pct)
-  # which <- which.max(rep.pct)
-  # s <- skewness(rep.pct)
-  # k <- kurtosis(rep.pct)
+  # condense table
+  classes <- c("LINE", "SINE", "LTR", "DNA", "RC", "Div", "Unknown")
+  for (j in classes) {
+    pat <- paste0("^", j, "(\\.|$)")
+    headers <- grep(pat, names(table), value = TRUE)
+    sub <- table[, headers]
+    sums <- rowSums(as.matrix(sub))
+    table <- table[, !names(table) %in% headers]
+    assign(j, sums)
+  }
+  Others <- rowSums(as.matrix(table))
+  table <- data.frame(Div, LINE, SINE, LTR, DNA, RC, Others, Unknown)
+  
+  # all repeat total and median
+  rep.bp <- rowSums(table[, !names(table) == "Div"])
+  total.rep.pct <- sum((rep.bp / asmbsz[i]) * 100)
+  total.rep.median <- which(cumsum(rep.bp) > sum(rep.bp)/2)[1]
+  
+  for (k in classes) {
+    assign(paste0(tolower(k), ".rep.pct"), sum(table[k] / asmbsz[i] * 100))
+    assign(paste0(tolower(k), ".rep.median"), which(cumsum(table[k]) > sum(table[k])/2)[1])
+  }
   
   # build dataframe
   df <- data.frame(species, 
-                   totalrep.Mbp,
-                   totalrep.pct, 
-                   median
+                   total.rep.pct, 
+                   total.rep.median, 
+                   line.rep.pct, 
+                   line.rep.median, 
+                   sine.rep.pct, 
+                   sine.rep.median, 
+                   ltr.rep.pct, 
+                   ltr.rep.median, 
+                   dna.rep.pct, 
+                   dna.rep.median, 
+                   rc.rep.pct, 
+                   rc.rep.median
                    )
   repstats <- rbind(repstats, df)
 }
 df <- merge(dat, repstats, by = "species", all.x = TRUE)
 
 # reorganize and save results
-df <- df[, c(1:23, 28:30, 24:27)]
+df <- df[, c(1:20, 25:36, 21:24)]
 write.csv(df,
           "../results/parsed.csv", 
           row.names = FALSE)

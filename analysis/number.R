@@ -1,14 +1,11 @@
 
 # slope sig rsq
-aaa <- bbb <- ccc <- c()
 
-for (qw in (5:95)*0.01) {
+qwerty <- data.frame()
+for (qw in (0:97)*0.01) {
   
-  # Zhaobo Hu
-  # zhaobohu2002@gmail.com
   
-  # Description: Parses results and calculates additional statistics
-  # to summarize contigs for each species
+  thrs <- qw
   
   dat <- read.csv("../data/data.csv")
   
@@ -16,19 +13,23 @@ for (qw in (5:95)*0.01) {
   library(data.table)
   dir <- "../results/individual_species_results"
   files <- paste0(dir, "/",  list.files(dir))
-  raw <- lapply(files, fread)
-  raw <- as.data.frame(rbindlist((raw), fill = TRUE))
+  contigs <- lapply(files, fread)
+  contigs <- as.data.frame(rbindlist((contigs), fill = TRUE))
   
   # parse by contig size
-  raw <- raw[raw$size.Mbp >= 10, ]
+  contigs <- contigs[contigs$size.Mbp >= 10, ]
+  
+  # remove species with less than 2 contigs
+  rm <- names(table(contigs$species)[table(contigs$species) < 2])
+  contigs <- contigs[!(contigs$species %in% rm), ]
   
   # test new method
   parsed <- data.frame()
-  for (z in unique(raw$species)) {
-    sub <- raw[raw$species == z, ]
+  for (z in unique(contigs$species)) {
+    sub <- contigs[contigs$species == z, ]
     cont <- sum(sub$size.Mbp)
-    total <- raw[raw$species == z, ]$asmblysize[1]
-    if (cont/total >= qw) {
+    total <- contigs[contigs$species == z, ]$asmblysize[1]
+    if (cont/total >= thrs) {
       parsed <- rbind(parsed, sub)
     }
   }
@@ -44,17 +45,13 @@ for (qw in (5:95)*0.01) {
       beta <- fit$coefficients[2, 1]
       pval.beta <- fit$coefficients[2, 4]
       rsq <- summary(lm(sub$genecount ~ sub$size.Mbp))$r.squared
-      sdgd <- sd(sub$genedens)
-      meangd <- mean(sub$genedens)
-      cor <- cor(sub$size.Mbp, sub$genecount)
       weightmean <- sum(sub$genedens * sub$size.Mbp) / sum(sub$size.Mbp)
       weightsd <- sqrt(sum(sub$size.Mbp * (sub$genedens - weightmean)^2) / sum(sub$size.Mbp))
       weightcv <- weightsd / weightmean
-      chromsd <- sd(sub$size.Mbp)/mean(sub$size.Mbp)
-      contig.stats <- data.frame(species, beta, meangd, sdgd, pval.beta, rsq, cor, weightmean, weightsd, weightcv, chromsd)
+      contig.stats <- data.frame(species, beta, pval.beta, rsq, weightmean, weightsd, weightcv)
     } else {
-      beta <- meangd <- sdgd <- pval.beta <- rsq <- cor <- weightmean <- weightsd <- weightcv <- chromsd <- NA
-      contig.stats <- data.frame(species, beta, meangd, sdgd, pval.beta, rsq, cor, weightmean, weightsd, weightcv, chromsd)
+      beta <- pval.beta <- rsq <- weightmean <- weightsd <- weightcv <- NA
+      contig.stats <- data.frame(species, beta, pval.beta, rsq, weightmean, weightsd, weightcv)
     }
     final <- rbind(final, merge(merge(dat[dat$species == species, ], contig.stats, by = "species"), sub, by = "species", all = TRUE))
   }
@@ -65,12 +62,13 @@ for (qw in (5:95)*0.01) {
   final[final$clade %in% "Reptilia", ]$clade <- "Sauria"
   final[!(final$clade %in% c("Actinopterygii", "Mammalia", "Sauria")), ]$clade <- "Others"
   
+  final$cont.asmb.rat.cutoff <- thrs
+  
   # reorder columns
-  final <- final[, c(1, 27, 2:11, 26, 12:25)]
+  final <- final[, c(1, 23, 2:8, 12:17, 22, 24, 9:11, 18:21)]
   
   # write csv
   write.csv(final, "../results/parsed.csv", row.names = FALSE)
-  
   # Zhaobo Hu
   # zhaobohu2002@gmail.com
   
@@ -79,15 +77,13 @@ for (qw in (5:95)*0.01) {
   # contigs and another file for parsed contigs
   
   # calculate stats
-  # library(e1071)
   files <- list.files("../results/divsums")
   sp <- gsub("_", " ", gsub(".divsum$", "", files))
   
   dat <- read.csv("../results/parsed.csv")
   asmbsz <- dat[!duplicated(dat$species), ]
   asmbsz <- asmbsz[asmbsz$species %in% sp, ]
-  asmbsz <- asmbsz[order(asmbsz$species == sp), ]
-  asmbsz <- asmbsz$asmblysize.Mbp*1000000
+  asmbsz <- setNames(asmbsz$asmblysize.Mbp*1000000, asmbsz$species)
   
   repstats <- data.frame()
   for (i in 1:length(sp)) {
@@ -104,81 +100,99 @@ for (qw in (5:95)*0.01) {
                         header = TRUE)
     # drop NA columns
     table <- table[-c(which(sapply(table, function(col) all(is.na(col)))))]
-    # vector of divergence scores
-    div <- table$Div
-    # vector of the repeat content of each divergence score
-    rep.bp <- rowSums(table[, !names(table) == "Div"])
-    # repeat content in Mbp
-    totalrep.Mbp <- sum(rep.bp) / 1000000
-    # repeat content in percent coverage
-    rep.pct <- (rep.bp / asmbsz[i]) * 100
-    totalrep.pct <- sum(rep.pct)
-    # divergence bin with median repeat
-    median <- which(cumsum(rep.pct) > sum(rep.pct)/2)[1]
     
-    # unused
-    # mean <- sum(divergence*rep.pct)/sum(rep.pct)
-    # k <- kurtosis(rep.pct)
-    # s <- skewness(rep.pct)
-    # max <- max(rep.pct)
-    # which <- which.max(rep.pct)
-    # s <- skewness(rep.pct)
-    # k <- kurtosis(rep.pct)
+    # condense table
+    classes <- c("LINE", "SINE", "LTR", "DNA", "RC", "Div", "Unknown")
+    for (j in classes) {
+      pat <- paste0("^", j, "(\\.|$)")
+      headers <- grep(pat, names(table), value = TRUE)
+      sub <- table[, headers]
+      sums <- rowSums(as.matrix(sub))
+      table <- table[, !names(table) %in% headers]
+      assign(j, sums)
+    }
+    Others <- rowSums(as.matrix(table))
+    table <- data.frame(Div, LINE, SINE, LTR, DNA, RC, Others, Unknown)
+    
+    # all repeat total and median
+    rep.bp <- rowSums(table[, !names(table) == "Div"])
+    total.rep.pct <- sum((rep.bp / asmbsz[i]) * 100)
+    total.rep.median <- which(cumsum(rep.bp) > sum(rep.bp)/2)[1]
+    
+    for (k in classes) {
+      assign(paste0(tolower(k), ".rep.pct"), sum(table[k] / asmbsz[i] * 100))
+      assign(paste0(tolower(k), ".rep.median"), which(cumsum(table[k]) > sum(table[k])/2)[1])
+    }
     
     # build dataframe
     df <- data.frame(species, 
-                     totalrep.Mbp,
-                     totalrep.pct, 
-                     median
+                     total.rep.pct, 
+                     total.rep.median, 
+                     line.rep.pct, 
+                     line.rep.median, 
+                     sine.rep.pct, 
+                     sine.rep.median, 
+                     ltr.rep.pct, 
+                     ltr.rep.median, 
+                     dna.rep.pct, 
+                     dna.rep.median, 
+                     rc.rep.pct, 
+                     rc.rep.median
     )
     repstats <- rbind(repstats, df)
   }
   df <- merge(dat, repstats, by = "species", all.x = TRUE)
   
   # reorganize and save results
-  df <- df[, c(1:23, 28:30, 24:27)]
+  df <- df[, c(1:20, 25:36, 21:24)]
   write.csv(df,
             "../results/parsed.csv", 
             row.names = FALSE)
   
   
-  # before pgls: new parsing method kept 21 mammals and rsq~transformed median has slope -1.6988 and p value 0.016207; no need to exponentiate weights
-  # after pgls: 20 species, beta = 1.747489, p = 0.0183, r2 = 0.2731145, predicted rsq diff between highest and lowest medians: 0.37446190
-  # what about other clades?
   
   
-  # new model
-  library(viridis)
-  dat <- read.csv("../results/parsed.csv")
-  d <- dat
-  dat <- dat[!duplicated(dat$species), ]
-  dat <- dat[!is.na(dat$chromnum.1n), ]
-  dat$median.trans <- 1 - (dat$median/70)
-  dat$totalrep.prop <- dat$totalrep.pct * 0.01
-  dat <- na.omit(dat[, c("species", "rsq", "class", "order", "family", "clade", "median.trans", "totalrep.prop", "chromnum.1n", "est.gnsz.Mbp", "asmblysize.Mbp")])
-  dat <- dat[dat$clade == "Mammalia", ]
-  dat <- dat[dat$species != "Callithrix jacchus", ]
-  library(phytools)
-  tree <- read.tree("../data/formatted_tree.nwk")
-  tree$tip.label <- gsub("_", " ", tree$tip.label)
-  int <- intersect(tree$tip.label, dat$species)
-  pruned.tree <- keep.tip(tree, int)
-  dat1 <- dat[dat$species %in% int, ]
-  dat1 <- dat1[match(pruned.tree$tip.label, dat1$species), ]
-  model <- glm(rsq ~ median.trans, data = dat1)
-  res <- setNames(resid(model), dat1$species)
-  phylosig(pruned.tree, res, method="lambda", test=TRUE)
-  library(nlme)
-  aaa <- c(aaa, summary(gls(rsq ~ median.trans, 
-              data = dat1))$tTable[2, 1])
-  bbb <- c(bbb, summary(gls(rsq ~ median.trans, 
-              data = dat1))$tTable[2, 4])
-  library(piecewiseSEM)
-  ccc <- c(ccc, as.numeric(rsquared(gls(rsq ~ median.trans, data = dat1))[5]))
-  
-
+  qwert <- list()
+  classes <- c("total", "line", "sine", "ltr", "dna", "rc")
+  for (qwe in classes) {
+    dat <- read.csv("../results/parsed.csv")
+    d <- dat
+    dat <- dat[!duplicated(dat$species), ]
+    dat <- dat[!is.na(dat$chromnum.1n), ]
+    dat$median.trans <- 1 - (dat[[paste0(qwe, ".rep.median")]]/70)
+    dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans")])
+    dat <- dat[dat$clade == "Mammalia", ]
+    dat <- dat[dat$species != "Callithrix jacchus", ]
+    library(phytools)
+    tree <- read.tree("../data/formatted_tree.nwk")
+    tree$tip.label <- gsub("_", " ", tree$tip.label)
+    int <- intersect(tree$tip.label, dat$species)
+    pruned.tree <- keep.tip(tree, int)
+    dat1 <- dat[dat$species %in% int, ]
+    dat1 <- dat1[match(pruned.tree$tip.label, dat1$species), ]
+    model <- glm(rsq ~ median.trans, data = dat1)
+    res <- setNames(resid(model), dat1$species)
+    signal <- phylosig(pruned.tree, res, method="lambda", test=TRUE)[4]
+    if (signal < 0.05) {
+      library(nlme)
+      qwert[[paste0(qwe, ".slope")]] <- summary(gls(rsq ~ median.trans, data = dat1))$tTable[2, 1]
+      qwert[[paste0(qwe, ".p")]] <- summary(gls(rsq ~ median.trans, data = dat1))$tTable[2, 4]
+      library(piecewiseSEM)
+      qwert[[paste0(qwe, ".r2")]] <- rsquared(gls(rsq ~ median.trans, data = dat1))[[5]]
+    } else {
+      qwert[[paste0(qwe, ".slope")]] <- summary(glm(rsq ~ median.trans, data = dat))$coefficients[2, 1]
+      qwert[[paste0(qwe, ".p")]] <- summary(glm(rsq ~ median.trans, data = dat))$coefficients[2, 4]
+      library(piecewiseSEM)
+      qwert[[paste0(qwe, ".r2")]] <- rsquared(glm(rsq ~ median.trans, data = dat))[[5]]
+    }
+  }
+  qwert <- as.data.frame(qwert)
+  qwert$number <- qw
+  qwerty <- rbind(qwerty, as.data.frame(qwert))
 }
-df <- data.frame(c((5:95)*0.01), aaa, bbb, ccc)
+
+
+df <- data.frame(c((0:97)*0.01), aaa, bbb, ccc)
 names(df) <- c("number", "beta", "p", "rsq")
 write.csv(df, file = "../results/number.csv", row.names = F)
 df <- read.csv("../results/number.csv")
