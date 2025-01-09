@@ -8,12 +8,10 @@
 # calculate stats
 files <- list.files("../results/divsums")
 sp <- gsub("_", " ", gsub(".divsum$", "", files))
-
 dat <- read.csv("../results/parsed.csv")
 asmbsz <- dat[!duplicated(dat$species), ]
 asmbsz <- asmbsz[asmbsz$species %in% sp, ]
 asmbsz <- setNames(asmbsz$asmblysize.Mbp*1000000, asmbsz$species)
-
 repstats <- data.frame()
 for (i in 1:length(sp)) {
   species <- sp[i]
@@ -45,11 +43,12 @@ for (i in 1:length(sp)) {
   
   # all repeat total and median
   rep.bp <- rowSums(table[, !names(table) == "Div"])
-  total.rep.pct <- sum((rep.bp / asmbsz[i]) * 100)
+  total.rep.pct <- sum((rep.bp / asmbsz[sp[i]]) * 100)
+  
   total.rep.median <- which(cumsum(rep.bp) > sum(rep.bp)/2)[1]
   
   for (k in classes) {
-    assign(paste0(tolower(k), ".rep.pct"), sum(table[k] / asmbsz[i] * 100))
+    assign(paste0(tolower(k), ".rep.pct"), sum(table[k] /  asmbsz[sp[i]] * 100))
     assign(paste0(tolower(k), ".rep.median"), which(cumsum(table[k]) > sum(table[k])/2)[1])
   }
   

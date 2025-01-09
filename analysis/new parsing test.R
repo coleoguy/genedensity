@@ -6,7 +6,7 @@
 # to summarize contigs for each species
 
 # contig sum/assembly size ratio threshold
-thrs <- 0.8
+thrs <- 0
 
 dat <- read.csv("../data/data.csv")
 

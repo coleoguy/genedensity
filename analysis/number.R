@@ -1,26 +1,22 @@
 
 
-# for total, line, ltr, dna, rc, increasing threshold does not affect significance
-# until threshold > 0.8, after which significance becomes unstable and increases 
-# sharply. this is because analyzing these repeat types requires PGLS, which in
-# turn bottlenecks sample size to the same ~48 species due to the requirement of
-# intersecting species. This pattern is not observed in SINEs, which show no
-# phylogenetic signals in their model residuals (p = 0.5) and are therefore not 
-# constrained by the matching species requirement.
+terms <- c(
+  "(Intercept)", 
+  "chromnum.1n", 
+  "median.trans", 
+  "rep.prop", 
+  "chromnum.1n:median.trans", 
+  "chromnum.1n:rep.prop", 
+  "median.trans:rep.prop", 
+  "chromnum.1n:median.trans:rep.prop"
+)
+lis <- list()
 
-
-
-
-
-qwerty <- data.frame()
-for (qw in (0:97)*0.01) {
+# for each threshold
+for (thrs in (0:100)*0.01) {
   
-  
-  thrs <- qw
-  
+  # read data
   dat <- read.csv("../data/data.csv")
-  
-  # combine raw contig results
   library(data.table)
   dir <- "../results/individual_species_results"
   files <- paste0(dir, "/",  list.files(dir))
@@ -78,24 +74,39 @@ for (qw in (0:97)*0.01) {
   # reorder columns
   final <- final[, c(1, 23, 2:8, 12:17, 22, 24, 9:11, 18:21)]
   
-  # write csv
-  write.csv(final, "../results/parsed.csv", row.names = FALSE)
-  # Zhaobo Hu
-  # zhaobohu2002@gmail.com
   
-  # Description: Calculates statistics to summarize repeat landscape
-  # characteristics for each species. saves one file with parsed
-  # contigs and another file for parsed contigs
   
-  # calculate stats
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   files <- list.files("../results/divsums")
   sp <- gsub("_", " ", gsub(".divsum$", "", files))
-  
-  dat <- read.csv("../results/parsed.csv")
-  asmbsz <- dat[!duplicated(dat$species), ]
+  asmbsz <- final[!duplicated(final$species), ]
   asmbsz <- asmbsz[asmbsz$species %in% sp, ]
   asmbsz <- setNames(asmbsz$asmblysize.Mbp*1000000, asmbsz$species)
-  
   repstats <- data.frame()
   for (i in 1:length(sp)) {
     species <- sp[i]
@@ -127,11 +138,12 @@ for (qw in (0:97)*0.01) {
     
     # all repeat total and median
     rep.bp <- rowSums(table[, !names(table) == "Div"])
-    total.rep.pct <- sum((rep.bp / asmbsz[i]) * 100)
+    total.rep.pct <- sum((rep.bp / asmbsz[sp[i]]) * 100)
+    
     total.rep.median <- which(cumsum(rep.bp) > sum(rep.bp)/2)[1]
     
     for (k in classes) {
-      assign(paste0(tolower(k), ".rep.pct"), sum(table[k] / asmbsz[i] * 100))
+      assign(paste0(tolower(k), ".rep.pct"), sum(table[k] /  asmbsz[sp[i]] * 100))
       assign(paste0(tolower(k), ".rep.median"), which(cumsum(table[k]) > sum(table[k])/2)[1])
     }
     
@@ -152,58 +164,152 @@ for (qw in (0:97)*0.01) {
     )
     repstats <- rbind(repstats, df)
   }
-  df <- merge(dat, repstats, by = "species", all.x = TRUE)
+  final <- merge(final, repstats, by = "species", all.x = TRUE)
   
   # reorganize and save results
-  df <- df[, c(1:20, 25:36, 21:24)]
-  write.csv(df,
-            "../results/parsed.csv", 
-            row.names = FALSE)
+  final <- final[, c(1:20, 25:36, 21:24)]
   
   
   
   
-  qwert <- list()
-  classes <- c("total", "line", "sine", "ltr", "dna", "rc")
-  for (qwe in classes) {
-    dat <- read.csv("../results/parsed.csv")
-    d <- dat
-    dat <- dat[!duplicated(dat$species), ]
-    dat <- dat[!is.na(dat$chromnum.1n), ]
-    dat$median.trans <- 1 - (dat[[paste0(qwe, ".rep.median")]]/70)
-    dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans")])
-    dat <- dat[dat$clade == "Mammalia", ]
-    dat <- dat[dat$species != "Callithrix jacchus", ]
-    library(phytools)
-    tree <- read.tree("../data/formatted_tree.nwk")
-    tree$tip.label <- gsub("_", " ", tree$tip.label)
-    int <- intersect(tree$tip.label, dat$species)
-    pruned.tree <- keep.tip(tree, int)
-    dat1 <- dat[dat$species %in% int, ]
-    dat1 <- dat1[match(pruned.tree$tip.label, dat1$species), ]
-    model <- glm(rsq ~ median.trans, data = dat1)
-    res <- setNames(resid(model), dat1$species)
-    signal <- phylosig(pruned.tree, res, method="lambda", test=TRUE)[4]
-    if (signal < 0.05) {
-      library(nlme)
-      qwert[[paste0(qwe, ".slope")]] <- summary(gls(rsq ~ median.trans, data = dat1))$tTable[2, 1]
-      qwert[[paste0(qwe, ".p")]] <- summary(gls(rsq ~ median.trans, data = dat1))$tTable[2, 4]
-      library(piecewiseSEM)
-      qwert[[paste0(qwe, ".r2")]] <- rsquared(gls(rsq ~ median.trans, data = dat1))[[5]]
-    } else {
-      qwert[[paste0(qwe, ".slope")]] <- summary(glm(rsq ~ median.trans, data = dat))$coefficients[2, 1]
-      qwert[[paste0(qwe, ".p")]] <- summary(glm(rsq ~ median.trans, data = dat))$coefficients[2, 4]
-      library(piecewiseSEM)
-      qwert[[paste0(qwe, ".r2")]] <- rsquared(glm(rsq ~ median.trans, data = dat))[[5]]
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  for (cl in c("Mammalia", "Actinopterygii", "Sauria")) {
+    classes <- c("total", "line", "sine", "ltr", "dna", "rc")
+    for (qwe in classes) {
+      dat <- final[!duplicated(final$species), ]
+      dat <- dat[!is.na(dat$chromnum.1n), ]
+      dat$median.trans <- 1 - (dat[[paste0(qwe, ".rep.median")]]/70)
+      dat$rep.prop <- dat[[paste0(qwe, ".rep.pct")]] / 100
+      dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "rep.prop", "chromnum.1n")])
+      dat <- dat[dat$clade == cl, ]
+      dat <- dat[dat$species != "Callithrix jacchus", ]
+      library(phytools)
+      tree <- read.tree("../data/formatted_tree.nwk")
+      tree$tip.label <- gsub("_", " ", tree$tip.label)
+      int <- intersect(tree$tip.label, dat$species)
+      pruned.tree <- keep.tip(tree, int)
+      dat1 <- dat[dat$species %in% int, ]
+      dat1 <- dat1[match(pruned.tree$tip.label, dat1$species), ]
+      formula <- reformulate(terms[-1], "rsq")
+      sink("NUL")
+      model <- step(glm(formula, data = dat1))
+      sink()
+      res <- setNames(resid(model), dat1$species)
+      signal <- phylosig(pruned.tree, res, method="lambda", test=TRUE)[4]
+      if (signal < 0.05) {
+        sig <- TRUE
+        library(nlme)
+        library(MASS)
+        sink("NUL")
+        model <- stepAIC(gls(formula, data = dat1, method = "ML"), direction = "both")
+        sink()
+        effects <- data.frame(summary(model)$tTable)[terms, ]
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, "p", effects$p.value)))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, "beta", effects$Value)))
+      } else {
+        sig <- FALSE
+        sink("NUL")
+        model <- step(glm(formula, data = dat)) 
+        sink()
+        effects <- data.frame(summary(model)$coefficients)[terms, ]
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, "p", effects$Pr...t..)))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, "beta", effects$Estimate)))
+      }
     }
   }
-  qwert <- as.data.frame(qwert)
-  qwert$number <- qw
-  qwerty <- rbind(qwerty, as.data.frame(qwert))
+  
+  
+  
+  
+  
+  
+  
+  
+  
 }
 
-qwerty <- qwerty[, c(19, 1:18)]
-write.csv(qwerty, file = "../results/number.csv", row.names = F)
-df <- read.csv("../results/number.csv")
 
+
+
+
+
+
+
+
+df <- as.data.frame(do.call(rbind, lis))
+names(df) <- c("clade", "thrs", "repeat", "phylosig", "stat", "intercept", terms[-1])
+num <- c("thrs", "intercept", terms[-1])
+df[, num] <- lapply(df[, num], as.numeric)
+write.csv(df, file = "../results/number.csv", row.names = F)
+
+
+terms <- c(
+  "intercept", 
+  "chromnum.1n", 
+  "median.trans", 
+  "rep.prop", 
+  "chromnum.1n:median.trans", 
+  "chromnum.1n:rep.prop", 
+  "median.trans:rep.prop", 
+  "chromnum.1n:median.trans:rep.prop"
+)
+df <- read.csv("../results/number.csv")
+names(df) <- c("clade", "thrs", "repeat", "phylosig", "stat", terms)
+
+
+# models where every term is either significant or NA
+df1 <- df[apply(df[, terms[-1]], 1, function(x) all(is.na(x) | x < 0.05)), ]
+
+# remove models with all NA terms
+df1 <- df1[rowSums(is.na(df1[, terms[-1]])) < length(terms[-1]), ]
+
+# filter for significant clade-threshold-repeat combinations
+df1 <- df1[df1$stat == "p", ]
+hit <- c("clade", "thrs", "repeat")
+df1 <- df1[, hit]
+
+# get beta coefficients for significant combinations
+df2 <- merge(df, df1, by = intersect(names(df), names(df1)))
+df2 <- df2[df2$stat == "beta", ]
+df2 <- df2[df2$`repeat` == "total", ]
 
