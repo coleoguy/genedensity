@@ -1,5 +1,5 @@
 
-
+library(performance)
 terms <- c(
   "(Intercept)", 
   "chromnum.1n", 
@@ -213,7 +213,7 @@ for (thrs in (0:100)*0.01) {
   
   
   
-  for (cl in c("Mammalia", "Actinopterygii", "Sauria")) {
+  for (cl in c("Total", "Mammalia", "Actinopterygii", "Sauria")) {
     classes <- c("total", "line", "sine", "ltr", "dna", "rc")
     for (qwe in classes) {
       dat <- final[!duplicated(final$species), ]
@@ -221,7 +221,9 @@ for (thrs in (0:100)*0.01) {
       dat$median.trans <- 1 - (dat[[paste0(qwe, ".rep.median")]]/70)
       dat$rep.prop <- dat[[paste0(qwe, ".rep.pct")]] / 100
       dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "rep.prop", "chromnum.1n")])
-      dat <- dat[dat$clade == cl, ]
+      if (cl %in% c("Mammalia", "Actinopterygii", "Sauria")) {
+        dat <- dat[dat$clade == cl, ]
+      }
       dat <- dat[dat$species != "Callithrix jacchus", ]
       library(phytools)
       tree <- read.tree("../data/formatted_tree.nwk")
@@ -244,16 +246,16 @@ for (thrs in (0:100)*0.01) {
         model <- stepAIC(gls(formula, data = dat1, method = "ML"), direction = "both")
         sink()
         effects <- data.frame(summary(model)$tTable)[terms, ]
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, "p", effects$p.value)))
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, "beta", effects$Value)))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, "p", effects$p.value, r2(model))))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, "beta", effects$Value, r2(model))))
       } else {
         sig <- FALSE
         sink("NUL")
         model <- step(glm(formula, data = dat)) 
         sink()
         effects <- data.frame(summary(model)$coefficients)[terms, ]
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, "p", effects$Pr...t..)))
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, "beta", effects$Estimate)))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, "p", effects$Pr...t.., r2(model))))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, "beta", effects$Estimate, r2(model))))
       }
     }
   }
@@ -277,10 +279,12 @@ for (thrs in (0:100)*0.01) {
 
 
 df <- as.data.frame(do.call(rbind, lis))
-names(df) <- c("clade", "thrs", "repeat", "phylosig", "stat", "intercept", terms[-1])
-num <- c("thrs", "intercept", terms[-1])
+names(df) <- c("clade", "thrs", "repeat", "phylosig", "stat", "intercept", terms[-1], "R2")
+num <- c("thrs", "intercept", terms[-1], "R2")
 df[, num] <- lapply(df[, num], as.numeric)
-write.csv(df, file = "../results/number.csv", row.names = F)
+# some stuff are lists
+df[] <- lapply(df, function(x) if(is.list(x)) sapply(x, paste, collapse=",") else x)
+write.csv(df, file = "../results/models.csv", row.names = F)
 
 
 terms <- c(
@@ -293,8 +297,8 @@ terms <- c(
   "median.trans:rep.prop", 
   "chromnum.1n:median.trans:rep.prop"
 )
-df <- read.csv("../results/number.csv")
-names(df) <- c("clade", "thrs", "repeat", "phylosig", "stat", terms)
+df <- read.csv("../results/models.csv")
+names(df) <- c("clade", "thrs", "repeat", "phylosig", "stat", terms, "R2")
 
 
 # models where every term is either significant or NA
@@ -312,4 +316,71 @@ df1 <- df1[, hit]
 df2 <- merge(df, df1, by = intersect(names(df), names(df1)))
 df2 <- df2[df2$stat == "beta", ]
 df2 <- df2[df2$`repeat` == "total", ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# models where every term is either significant or NA
+df1 <- df[apply(df[, terms[-1]], 1, function(x) all(is.na(x) | x < 0.05)), ]
+
+# remove models with all NA terms
+df1 <- df1[rowSums(is.na(df1[, terms[-1]])) < length(terms[-1]), ]
+
+# filter for significant clade-threshold-repeat combinations
+df1 <- df1[df1$stat == "p", ]
+hit <- c("clade", "thrs", "repeat")
+df1 <- df1[, hit]
+
+# get beta coefficients for significant combinations
+df2 <- merge(df, df1, by = intersect(names(df), names(df1)))
+df2 <- df2[df2$stat == "beta", ]
+df2 <- df2[!(df2$`repeat` == "total"), ]
+df2 <- df2[df2$clade == "Total", ]
+View(df2[df2$`repeat` == "dna", ])
+
+
+
+
+
+
+
+
+df3 <- df
+df3 <- df3[df3$clade == "Mammalia", ]
+df3 <- df3[df3$`repeat` == "total", ]
+plot(df3$thrs, df3$R2)
+
+
+
+
+
+
+
+
+
+
+
 
