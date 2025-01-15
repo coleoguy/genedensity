@@ -264,6 +264,6 @@ for (thrs in (0:100)*0.01) {
 
 
 df <- as.data.frame(do.call(rbind, lis))
-names(df) <- c("thrs", "p")
+names(df) <- c("thrs", "sig", "p")
 write.csv(df, "../results/mars.csv", row.names = F)
 l <- read.csv("../results/mars.csv")

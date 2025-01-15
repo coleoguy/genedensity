@@ -63,16 +63,13 @@ for (i in 1:length(sp)) {
   repstats <- rbind(repstats, df)
 }
 
-final <- merge(final, repstats, by = "species", all.x = TRUE)
-
 # reorganize and save results
 dat <- merge(dat, repstats, by= "species", all = T)
-
-
 dat <- dat[, c(1:15, 20:31, 16:19)]
-
-
-write.csv(df,
+dat <- dat[order(dat$size.Mbp, decreasing = TRUE), ]
+dat <- dat[order(dat$species), ]
+dat <- dat[order(dat$thrs), ]
+write.csv(dat,
           "../results/parsed.csv", 
           row.names = FALSE)
 
