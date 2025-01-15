@@ -1,10 +1,4 @@
 
-library(performance)
-library(caper)
-library(MuMIn)
-library(piecewiseSEM)
-library(phytools)
-options(na.action = "na.fail")
 terms <- c(
   "(Intercept)", 
   "chromnum.1n", 
@@ -217,160 +211,59 @@ for (thrs in (0:100)*0.01) {
   
   
   
-  
-  for (cl in c("Total", "Mammalia", "Actinopterygii", "Sauria")) {
-    classes <- c("total", "line", "sine", "ltr", "dna", "rc")
-    for (qwe in classes) {
+  # LINEs for all clades
+  library(caper)
+  library(phytools)
+  library(MuMIn)
+
+  dat <- final
+  dat <- dat[!duplicated(dat$species), ]
+  dat <- dat[!is.na(dat$chromnum.1n), ]
+  dat <- dat[dat$clade %in% "Mammalia", ]
+  mars <- c()
+  for (g in 1:nrow(dat)) {
+    if (dat[g, ]$order %in% c("Didelphimorphia", 
+                              "Paucituberculata", 
+                              "Microbiotheria",
+                              "Dasyuromorphia", 
+                              "Notoryctemorphia",
+                              "Peramelemorphia", 
+                              "Diprotodontia")){
+      mars <- c(mars, TRUE)
       
-      # subset relevant results for analysis
-      dat <- final[!duplicated(final$species), ]
-      dat <- dat[!is.na(dat$chromnum.1n), ]
-      dat$median.trans <- 1 - (dat[[paste0(qwe, ".rep.median")]]/70)
-      dat$rep.prop <- dat[[paste0(qwe, ".rep.pct")]] / 100
-      dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "rep.prop", "chromnum.1n")])
-      if (cl %in% c("Mammalia", "Actinopterygii", "Sauria")) {
-        dat <- dat[dat$clade == cl, ]
-      }
-      dat <- dat[dat$species != "Callithrix jacchus", ]
-      
-      # find intersection between tree tips and results and create compdata obj
-      tree <- read.tree("../data/formatted_tree.nwk")
-      tree$tip.label <- gsub("_", " ", tree$tip.label)
-      int <- intersect(tree$tip.label, dat$species)
-      pruned.tree <- keep.tip(tree, int)
-      
-      # initial model selection
-      formula <- reformulate(terms[-1], "rsq")
-      model <- get.models(dredge(glm(formula, data = dat)), 1)[[1]]
-      
-      # if phylogenetic signals are present in the residuals, use PGLS
-      res <- setNames(resid(model), dat$species)
-      signal <- phylosig(pruned.tree, res, method="lambda", test=TRUE)[[4]]
-      if (signal < 0.05) {
-        sig <- TRUE
-        cd <- comparative.data(pruned.tree, dat, names.col = "species", vcv = T)
-        model <- get.models(dredge(pgls(formula, data = cd)), 1)[[1]]
-        effects <- data.frame(summary(model)$coefficients)[terms, ]
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, "p", effects$Pr...t.., rsquared(model)[[5]])))
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, "beta", effects$Estimate, rsquared(model)[[5]])))
-      } else {
-        sig <- FALSE
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, "p", effects$Pr...t.., rsquared(model)[[5]])))
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, "beta", effects$Estimate, rsquared(model)[[5]])))
-      }
+    } else {
+      mars <- c(mars, FALSE)
     }
+  }
+  dat$mars <- mars
+  dat <- na.omit(dat[, c("species", "rsq", "clade", "mars")])
+  dat <- dat[dat$species != "Callithrix jacchus", ]
+  
+  tree <- read.tree("../data/formatted_tree.nwk")
+  tree$tip.label <- gsub("_", " ", tree$tip.label)
+  int <- intersect(tree$tip.label, dat$species)
+  pruned.tree <- keep.tip(tree, int)
+  model <- glm(rsq ~ as.factor(mars),data = dat)
+  
+  rsq <- setNames(dat$rsq, dat$species)
+  signal <- phylosig(pruned.tree, rsq, method="lambda", test=TRUE)[[4]]
+  
+  if (signal < 0.05) {
+    sig <- TRUE
+    x <- setNames(as.factor(dat$mars), dat$species)
+    y <- setNames(dat$rsq, dat$species)
+    p <- phylANOVA(pruned.tree, x, y, nsim = 10000, posthoc = TRUE)$Pf
+    lis <- c(lis, list(c(thrs, sig, p)))
+  } else {
+    sig <- FALSE
+    p <- summary(aov(rsq ~ mars, data = dat))[[1]][1, 5]
+    lis <- c(lis, list(c(thrs, sig, p)))
   }
 }
 
 
 
-
-
-
-
-
-
 df <- as.data.frame(do.call(rbind, lis))
-names(df) <- c("clade", "thrs", "repeat", "phylosig", "stat", "intercept", terms[-1], "R2")
-num <- c("thrs", "intercept", terms[-1], "R2")
-df[, num] <- lapply(df[, num], as.numeric)
-# some stuff are lists
-df[] <- lapply(df, function(x) if(is.list(x)) sapply(x, paste, collapse=",") else x)
-write.csv(df, file = "../results/models.csv", row.names = F)
-
-
-terms <- c(
-  "intercept", 
-  "chromnum.1n", 
-  "median.trans", 
-  "rep.prop", 
-  "chromnum.1n:median.trans", 
-  "chromnum.1n:rep.prop", 
-  "median.trans:rep.prop", 
-  "chromnum.1n:median.trans:rep.prop"
-)
-df <- read.csv("../results/models.csv")
-names(df) <- c("clade", "thrs", "repeat", "phylosig", "stat", terms, "R2")
-
-
-# models where every term is either significant or NA
-df1 <- df[apply(df[, terms[-1]], 1, function(x) all(is.na(x) | x < 0.05)), ]
-
-# remove models with all NA terms
-df1 <- df1[rowSums(is.na(df1[, terms[-1]])) < length(terms[-1]), ]
-
-# filter for significant clade-threshold-repeat combinations
-df1 <- df1[df1$stat == "p", ]
-hit <- c("clade", "thrs", "repeat")
-df1 <- df1[, hit]
-
-# get beta coefficients for significant combinations
-df2 <- merge(df, df1, by = intersect(names(df), names(df1)))
-df2 <- df2[df2$stat == "beta", ]
-df2 <- df2[df2$`repeat` == "total", ]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# models where every term is either significant or NA
-df1 <- df[apply(df[, terms[-1]], 1, function(x) all(is.na(x) | x < 0.05)), ]
-
-# remove models with all NA terms
-df1 <- df1[rowSums(is.na(df1[, terms[-1]])) < length(terms[-1]), ]
-
-# filter for significant clade-threshold-repeat combinations
-df1 <- df1[df1$stat == "p", ]
-hit <- c("clade", "thrs", "repeat")
-df1 <- df1[, hit]
-
-# get beta coefficients for significant combinations
-df2 <- merge(df, df1, by = intersect(names(df), names(df1)))
-df2 <- df2[df2$stat == "beta", ]
-df2 <- df2[!(df2$`repeat` == "total"), ]
-df2 <- df2[df2$clade == "Total", ]
-View(df2[df2$`repeat` == "dna", ])
-
-
-
-
-
-
-
-
-df3 <- df
-df3 <- df3[df3$clade == "Mammalia", ]
-df3 <- df3[df3$`repeat` == "line", ]
-df3 <- df3[df3$stat == "p", ]
-plot(df3$thrs, df3$R2)
-plot(df3$thrs, apply(df3[, terms[-1]], 1, max, na.rm = T))
-
-
-
-
-
-
-
-
+names(df) <- c("thrs", "p")
+write.csv(df, "../results/mars.csv", row.names = F)
+l <- read.csv("../results/mars.csv")
