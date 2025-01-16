@@ -5,7 +5,7 @@
 
 
 # unlike the other script, this one only looks at rsq ~ median * percent
-
+# tried base effects. now dropping them
 
 
 library(performance)
@@ -16,8 +16,6 @@ library(phytools)
 options(na.action = "na.fail")
 terms <- c(
   "(Intercept)", 
-  "median.trans", 
-  "rep.prop", 
   "median.trans:rep.prop"
 )
 lis <- list()
@@ -167,7 +165,7 @@ for (thrs in (0:100)*0.01) {
       pruned.tree <- keep.tip(tree, int)
       
       # initial model
-      model <- glm(rsq ~ median.trans*rep.prop, data = dat)
+      model <- glm(rsq ~ median.trans:rep.prop, data = dat)
       
       # if phylogenetic signals are present in the residuals, use PGLS
       res <- setNames(resid(model), dat$species)
@@ -175,7 +173,7 @@ for (thrs in (0:100)*0.01) {
       if (signal < 0.05) {
         sig <- TRUE
         cd <- comparative.data(pruned.tree, dat, names.col = "species", vcv = T)
-        model <- pgls(rsq ~ median.trans*rep.prop, data = cd)
+        model <- pgls(rsq ~ median.trans:rep.prop, data = cd)
         effects <- data.frame(summary(model)$coefficients)[terms, ]
         lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(cd$data), "p", effects$Pr...t.., rsquared(model)[[5]])))
         lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(cd$data), "beta", effects$Estimate, rsquared(model)[[5]])))
