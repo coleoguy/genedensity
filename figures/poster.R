@@ -180,3 +180,194 @@ abline(model.rep,
        col = adjustcolor("#1b9e77", alpha.f = 0.5),
        lwd = 1.5)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+name <- cl <- r2 <- largest <- c()
+dat <- read.csv("../data/data.csv")
+
+# combine raw contig results
+library(data.table)
+dir <- "../results/individual_species_results"
+files <- paste0(dir, "/",  list.files(dir))
+contigs <- lapply(files, fread)
+contigs <- as.data.frame(rbindlist((contigs), fill = TRUE))
+
+# parse by contig size
+contigs <- contigs[contigs$size.Mbp >= 10, ]
+
+# remove species with less than 3 contigs
+rm <- names(table(contigs$species)[table(contigs$species) < 3])
+contigs <- contigs[!(contigs$species %in% rm), ]
+
+df <- data.frame()
+parsed <- data.frame()
+for (z in unique(contigs$species)) {
+  sub <- contigs[contigs$species == z, ]
+  cont <- sum(sub$size.Mbp)
+  total <- contigs[contigs$species == z, ]$asmblysize[1]
+  if (cont/total >= 0) {
+    parsed <- rbind(parsed, sub)
+  }
+}
+
+# calculate stats based on parsed results
+sp <- unique(parsed$species)
+for (species in sp) {
+  sub <- parsed[which(parsed$species == species), ]
+  # fit <- summary(glm(sub$genecount ~ sub$size.Mbp))
+  # beta <- fit$coefficients[2, 1]
+  # pval.beta <- fit$coefficients[2, 4]
+  rsq <- summary(lm(sub$genecount ~ sub$size.Mbp))$r.squared
+  # weightmean <- sum(sub$genedens * sub$size.Mbp) / sum(sub$size.Mbp)
+  # weightsd <- sqrt(sum(sub$size.Mbp * (sub$genedens - weightmean)^2) / sum(sub$size.Mbp))
+  # weightcv <- weightsd / weightmean
+  stats <- data.frame(species, rsq, 0)
+  sub <- merge(sub, stats, by = "species", all = TRUE)
+  sub <- merge(dat[dat$species == species, ], sub, by = "species", all = TRUE)
+  df <- rbind(df, sub)
+}
+
+#assign clades
+df$clade <- df$class
+df[df$clade %in% "Aves", ]$clade <- "Sauria"
+df[df$clade %in% "Reptilia", ]$clade <- "Sauria"
+df[!(df$clade %in% c("Actinopterygii", "Mammalia", "Sauria")), ]$clade <- "Others"
+
+files <- list.files("../results/divsums")
+sp <- gsub("_", " ", gsub(".divsum$", "", files))
+asmbsz <- df[!duplicated(df$species), ]
+asmbsz <- asmbsz[asmbsz$species %in% sp, ]
+asmbsz <- setNames(asmbsz$asmblysize.Mbp*1000000, asmbsz$species)
+repstats <- data.frame()
+
+for (i in 1:length(sp)) {
+  species <- sp[i]
+  # read text file into lines
+  divsum <- readLines(paste0("../results/divsums/", files[i]))
+  # look for the start of relevant information
+  phrase <- "Coverage for each repeat class and divergence (Kimura)"
+  start.index <- match(phrase, divsum) + 1
+  # condense relevant lines into a table
+  divsum <- divsum[start.index:length(divsum)]
+  divsum <- read.table(textConnection(divsum), 
+                       sep = " ", 
+                       header = TRUE)
+  # drop columns with all NA
+  divsum <- divsum[-c(which(sapply(divsum, function(col) all(is.na(col)))))]
+  divsum <- colSums(divsum)
+  name <- c(name, species)
+  cl <- c(cl, unique(df[df$species == species, ]$clade))
+  r2 <- c(r2, unique(df[df$species == species, ]$rsq))
+  largest <- c(largest, names(tail(sort(divsum), 1)))
+}
+df <- data.frame(name, cl, r2, largest)
+
+
+
+
+library(beeswarm)
+library(viridis)
+df <- df[df$cl %in% c("Mammalia", "Actinopterygii", "Sauria"), ]
+df$cl <- factor(df$cl, levels = c("Mammalia", "Actinopterygii", "Sauria"))
+df$largest[df$largest %in% c("DNA.TcMar.Tc1", "LINE.L2", "SINE.tRNA.Core")] <- "Others"
+map <- c("Mammalia" = "#d95f02", "Actinopterygii" = "#7570b3", "Sauria" = "#1b9e77")
+cols <- map[df$cl]
+par(mar = c(5, 4, 4, 7)+0.1)
+beeswarm(r2 ~ largest, 
+         data = df, 
+         xlab = "Largest repeat class by size", 
+         ylab = "R2", 
+         pch = 16, 
+         pwcol = cols, 
+         spacing = 1.1, 
+         at = c(1, 1.92, 3, 4.08, 5), 
+         labels = c("LINE/CR1", "LINE/L1", "LINE/RTE-BovB", "Others", "Unclassified"))
+text(8.02, (0.25+((0.8-0.25))), "Mammalia", xpd = NA, adj = 0)
+text(8.02, (0.25+(2*(0.8-0.25)/3)), "Actinopterygii", xpd = NA, adj = 0)
+text(8.02, (0.25+((0.8-0.25)/3)), "Sauria", xpd = NA, adj = 0)
+text(8.02, 0.25, "Others", xpd = NA, adj = 0)
+points(7.92, (0.25+((0.8-0.25))), pch = 16, col = "#FDE725FF", xpd = NA)
+points(7.92, (0.25+(2*(0.8-0.25)/3)), pch = 16, col = "#31688EFF", xpd = NA)
+points(7.92, (0.25+((0.8-0.25)/3)), pch = 16, col = "#35B779FF", xpd = NA)
+par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+
+
+
+
+dat <- read.csv("../results/parsed.csv")
+dat <- dat[dat$thrs == 0, ]
+dat <- dat[!duplicated(dat$species), ]
+dat <- na.omit(dat[, c("species", "rsq", "clade", "asmblysize.Mbp")])
+files <- list.files("../results/divsums")
+sp <- gsub("_", " ", gsub(".divsum$", "", files))
+asmbsz <- dat[dat$species %in% sp, ]
+asmbsz <- setNames(asmbsz$asmblysize.Mbp*1000000, asmbsz$species)
+cols <- c("#e31a1c", "#fb9a99", "#33a02c", "#b2df8a", "#1f78b4", "#a6cee3")
+par(mar = c(3, 4, 1, 7)+0.1)
+for (i in c(19, 138)) {
+  species <- sp[i]
+  # read text file into lines
+  divsum <- readLines(paste0("../results/divsums/", files[i]))
+  # look for the start of relevant information
+  phrase <- "Coverage for each repeat class and divergence (Kimura)"
+  start.index <- match(phrase, divsum) + 1
+  # condense relevant lines into a table
+  divsum <- divsum[start.index:length(divsum)]
+  divsum <- read.table(textConnection(divsum), 
+                       sep = " ", 
+                       header = TRUE)
+  # drop columns with all NA
+  divsum <- divsum[-c(which(sapply(divsum, function(col) all(is.na(col)))))]
+  
+  # condense table
+  classes <- c("LINE", "SINE", "LTR", "DNA", "Div", "Unknown")
+  for (j in classes) {
+    pat <- paste0("^", j, "(\\.|$)")
+    headers <- grep(pat, names(divsum), value = TRUE)
+    sub <- divsum[, headers]
+    sums <- rowSums(as.matrix(sub)) / asmbsz[i] * 100
+    divsum <- divsum[, !names(divsum) %in% headers]
+    assign(j, sums)
+  }
+  Others <- rowSums(as.matrix(divsum)) / asmbsz[i] * 100
+  divsum <- data.frame(LINE, SINE, LTR, DNA, Others, Unknown)
+  divsum <- t(as.matrix(divsum))
+  divsum <- divsum[, 1:51]
+  divsum <- divsum[nrow(divsum):1, ]
+  barplot(divsum, 
+          col = cols, # Assign different colors to each group
+          space = 0,                       # No space between bars for a continuous look
+          border = NA,                     # Remove borders for cleaner appearance
+          xlab = NA, 
+          ylab = NA, 
+          ylim = c(0, 1.1*3.049599))
+  axis(1)
+  pos <- seq(0.2 *3.049599, 0.85 * 3.049599, length.out = 6)
+  text(55, pos[6], "LINE", xpd = NA, adj = c(0, 0.5))
+  text(55, pos[5], "SINE", xpd = NA, adj = c(0, 0.5))
+  text(55, pos[4], "LTR", xpd = NA, adj = c(0, 0.5))
+  text(55, pos[3], "DNA", xpd = NA, adj = c(0, 0.5))
+  text(55, pos[2], "Others", xpd = NA, adj = c(0, 0.5))
+  text(55, pos[1], "Unclassified", xpd = NA, adj = c(0, 0.5))
+  points(53, pos[6], pch = 15, col = cols[6], xpd = NA, cex = 1.5)
+  points(53, pos[5], pch = 15, col = cols[5], xpd = NA, cex = 1.5)
+  points(53, pos[4], pch = 15, col = cols[4], xpd = NA, cex = 1.5)
+  points(53, pos[3], pch = 15, col = cols[3], xpd = NA, cex = 1.5)
+  points(53, pos[2], pch = 15, col = cols[2], xpd = NA, cex = 1.5)
+  points(53, pos[1], pch = 15, col = cols[1], xpd = NA, cex = 1.5)
+}
+par(mar = c(5.1, 4.1, 4.1, 2.1))
