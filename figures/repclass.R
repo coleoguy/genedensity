@@ -5,7 +5,7 @@
 terms <- c("line", "sine", "ltr", "dna", "rc")
 
 dat <- read.csv("../results/parsed.csv")
-dat <- dat[dat$thrs == 0.9, ]
+dat <- dat[dat$thrs == 0, ]
 df <- unique(dat[, c("species", "clade", "rsq")])
 largest <- c()
 for (i in df$species) {
@@ -38,7 +38,6 @@ points(4.9, (0.25+(2*(0.8-0.25)/3)), pch = 16, col = "#31688EFF", xpd = NA)
 points(4.9, (0.25+((0.8-0.25)/3)), pch = 16, col = "#35B779FF", xpd = NA)
 points(4.9, 0.25, pch = 16, col = "#440154FF", xpd = NA)
 par(mar = c(5.1, 4.1, 4.1, 2.1))
-viridis(4)
 
 
 # do clades differ in mean rsq after applying the new parsing step? NO

@@ -37,7 +37,7 @@ for (file in files) {
       breaks = c(unique(dat$repeat.class)[1:4], "Other", "Unknown"), 
       values = c("#e41a1c", "#ffff33", "#4daf4a", "#377eb8", "#ff7f00", "#984ea3")) +
     labs(x = "K2P Distance (Substitutions per Site)", 
-         y = "% Coverage")
+         y = "Percent of Genome")
   ggsave(filename = paste0(gsub(" ", "_", species), ".jpg"), 
          plot = last_plot(), 
          path = paste0("repeat_landscape"), 

@@ -1,9 +1,5 @@
 
 
-
-
-
-
 # repeat all calculations for 93 contig size cutoff thresholds and 
 # find the best model for each repeat type in each clade at each
 # cutoff threshold using an exhaustive approach. results stored in
@@ -242,4 +238,37 @@ df1 <- df1[, hit]
 df2 <- merge(df, df1, by = intersect(names(df), names(df1)))
 df2 <- df2[df2$stat == "beta", ]
 
+
+
+
+
+
+library(phytools)
+library(caper)
+dat <- read.csv("../results/parsed.csv")
+dat <- dat[dat$thrs == 0.85, ]
+dat <- dat[!duplicated(dat$species), ]
+dat <- dat[dat$clade == "Mammalia", ]
+dat <- na.omit(dat[, c("species", "clade", "rsq", "total.rep.median")])
+tree <- read.tree("../data/formatted_tree.nwk")
+tree$tip.label <- gsub("_", " ", tree$tip.label)
+int <- intersect(dat$species, tree$tip.label)
+pruned.tree <- keep.tip(tree, int)
+model <- glm(dat$rsq ~ dat$total.rep.median)
+res <- resid(model)
+sig <- phylosig(pruned.tree, 
+                setNames(res, dat$species), 
+                method = "lambda", 
+                nsim = 10000, 
+                test = TRUE)[[4]]
+if (sig < 0.05) {
+  cd <- comparative.data(pruned.tree, dat, names.col = "species", vcv = TRUE)
+  model <- pgls(rsq ~ total.rep.median, data = cd)
+}
+plot(x = dat$total.rep.median, 
+     y = dat$rsq,
+     xlab = "Repeat Age",
+     ylab = "Gene Density Variation",
+     pch = 16)
+abline(model)
 
