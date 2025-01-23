@@ -15,13 +15,9 @@ library(phytools)
 options(na.action = "na.fail")
 terms <- c(
   "(Intercept)", 
-  "chromnum.1n", 
   "median.trans", 
   "rep.prop", 
-  "chromnum.1n:median.trans", 
-  "chromnum.1n:rep.prop", 
-  "median.trans:rep.prop", 
-  "chromnum.1n:median.trans:rep.prop"
+  "median.trans:rep.prop"
 )
 lis <- list()
 
@@ -157,7 +153,7 @@ for (thrs in (0:100)*0.01) {
       dat <- dat[!is.na(dat$chromnum.1n), ]
       dat$median.trans <- 1 - (dat[[paste0(qwe, ".rep.median")]]/70)
       dat$rep.prop <- dat[[paste0(qwe, ".rep.pct")]] / 100
-      dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "rep.prop", "chromnum.1n")])
+      dat <- na.omit(dat[, c("species", "rsq", "clade", "median.trans", "rep.prop")])
       if (cl %in% c("Mammalia", "Actinopterygii", "Sauria")) {
         dat <- dat[dat$clade == cl, ]
       }
@@ -171,7 +167,9 @@ for (thrs in (0:100)*0.01) {
       
       # initial model selection
       formula <- reformulate(terms[-1], "rsq")
-      model <- get.models(dredge(glm(formula, data = dat)), 1)[[1]]
+      model <- step(glm(formula, data = dat))
+      effects <- data.frame(summary(model)$coefficients)[terms, ]
+      # model <- get.models(dredge(glm(formula, data = dat), subset = dc(x1, x2, x1:x2)), 1)[[1]]
       
       # if phylogenetic signals are present in the residuals, use PGLS
       res <- setNames(resid(model), dat$species)
@@ -179,14 +177,14 @@ for (thrs in (0:100)*0.01) {
       if (signal < 0.05) {
         sig <- TRUE
         cd <- comparative.data(pruned.tree, dat, names.col = "species", vcv = T)
-        model <- get.models(dredge(pgls(formula, data = cd)), 1)[[1]]
+        model <- get.models(dredge(pgls(formula, data = cd), subset = dc(x1, x2, x1:x2)), 1)[[1]]
         effects <- data.frame(summary(model)$coefficients)[terms, ]
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(cd$data), "p", effects$Pr...t.., rsquared(model)[[5]])))
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(cd$data), "beta", effects$Estimate, rsquared(model)[[5]])))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(cd$data), "p", effects$Pr...t.., rsquared(model)[[5]]/(1-rsquared(model)[[5]]))))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(cd$data), "beta", effects$Estimate, rsquared(model)[[5]]/(1-rsquared(model)[[5]]))))
       } else {
         sig <- FALSE
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(dat), "p", effects$Pr...t.., rsquared(model)[[5]])))
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(dat), "beta", effects$Estimate, rsquared(model)[[5]])))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(dat), "p", effects$Pr...t.., rsquared(model)[[5]]/(1-rsquared(model)[[5]]))))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(dat), "beta", effects$Estimate, rsquared(model)[[5]]/(1-rsquared(model)[[5]]))))
       }
     }
   }
@@ -201,26 +199,22 @@ for (thrs in (0:100)*0.01) {
 
 
 df <- as.data.frame(do.call(rbind, lis))
-names(df) <- c("clade", "thrs", "repeat", "phylosig", "n", "stat", "intercept", terms[-1], "R2")
-num <- c("thrs", "intercept", terms[-1], "R2")
+names(df) <- c("clade", "thrs", "repeat", "phylosig", "n", "stat", "intercept", terms[-1], "f2")
+num <- c("thrs", "intercept", terms[-1], "f2")
 df[, num] <- lapply(df[, num], as.numeric)
 # some stuff are lists
 df[] <- lapply(df, function(x) if(is.list(x)) sapply(x, paste, collapse=",") else x)
-write.csv(df, file = "../results/models.csv", row.names = F)
+write.csv(df, file = "../results/models.no.chromnum.csv", row.names = F)
 
 
 terms <- c(
   "intercept", 
-  "chromnum.1n", 
   "median.trans", 
   "rep.prop", 
-  "chromnum.1n:median.trans", 
-  "chromnum.1n:rep.prop", 
-  "median.trans:rep.prop", 
-  "chromnum.1n:median.trans:rep.prop"
+  "median.trans:rep.prop"
 )
-df <- read.csv("../results/models.csv")
-names(df) <- c("clade", "thrs", "repeat", "phylosig", "n", "stat", terms, "R2")
+df <- read.csv("../results/models.no.chromnum.csv")
+names(df) <- c("clade", "thrs", "repeat", "phylosig", "n", "stat", terms, "f2")
 
 
 # models where every term is either significant or NA
@@ -237,11 +231,13 @@ df1 <- df1[, hit]
 # get beta coefficients for significant combinations
 df2 <- merge(df, df1, by = intersect(names(df), names(df1)))
 df2 <- df2[df2$stat == "beta", ]
-
-
-
-df2 <- df2[!df2$clade %in% "Sauria", ]
 df2 <- df2[!df2$`repeat` %in% "rc", ]
+df2 <- df2[order(df2$thrs), ]
+df2 <- df2[order(df2$`repeat`), ]
+df2 <- df2[order(df2$clade), ]
+rownames(df2) <- c(1:nrow(df2))
+df2 <- df2[df2$thrs >= 0.7 & df2$thrs <= 0.9, ]
+
 
 #combinations of clades and repeats
 df3 <- unique(df2[, c("clade", "repeat"), ])
@@ -251,12 +247,12 @@ for (i in 1:nrow(df3)) {
   rep <- df3[i, ][[2]]
   sub <- df2[df2$clade == cl, ]
   sub <- sub[sub$`repeat` == rep, ]
-  sub <- sub[sub$thrs == round(mean(sub$thrs), 2), ][, 8:14]
-  beta <- sub[which(!is.na(sub))]
+  sub <- sub[, c(8, 9)]
+  beta <- mean(as.matrix(sub)[which(!is.na(sub))])
   l <- c(l, list(c(cl, rep, beta)))
 }
 df4 <- as.data.frame(do.call(rbind, l))
-vec <- abs(unlist(df4$median.trans))
+vec <- as.numeric(df4$V3)
 library(viridis)
 cols <- viridis(300)
 image(1, seq(0, 3, length.out = 300), t(seq(0, 3, length.out = 300)), col = cols, axes = FALSE, xlab = "", ylab = "")
@@ -264,13 +260,81 @@ axis(4)
 
 
 
-num <- vec / 3
+num <- (abs(vec)-min(abs(vec))) / diff(range(abs(vec)))
 cols <- viridis(300)
 ramp <- colorRamp(cols, interpolate = "linear")
 rgb(ramp(num), maxColorValue = 255)
 
 
-"#1FA286" "#E1E318" "#23898D" "#1F998A" "#23888E" "#23888E"
+[1] "#440155" "#FDE725" "#2A768E" "#471264" "#450558" "#450357" "#481A6C"
+[8] "#440154" "#440256"
+
+
+
+# Install and load necessary packages
+if (!requireNamespace("viridis", quietly = TRUE)) install.packages("viridis")
+if (!requireNamespace("scales", quietly = TRUE)) install.packages("scales")
+library(viridis)
+library(scales)
+
+# Your data vector
+vec <- c(1.492454, 21.466283, 9.323701, 2.367490, 1.667414, 1.576235, 2.788643, 1.431416, 1.542669)
+
+# Generate colors using a log-transformed scale
+log_colors <- viridis(length(vec))[rank(log(vec))]
+
+# Example of plotting points with log-transformed color scale
+plot(vec, pch = 16, col = log_colors, cex = 2, main = "Log-Transformed Color Scale", xlab = "Index", ylab = "Value")
+
+# Optional: Add a legend
+legend("topright", legend = signif(range(vec), 2), fill = viridis(2), title = "Log Scale")
+
+
+
+
+
+
+
+
+
+
+
+# Your data vector
+vec <- c(1.492454, 21.466283, 9.323701, 2.367490, 1.667414, 1.576235, 2.788643, 1.431416, 1.542669)
+
+# Define the range of values for the color scale
+vec_range <- range(vec)
+
+# Generate a sequence of values for the scale (log-transformed)
+scale_values <- seq(log(vec_range[1]), log(vec_range[2]), length.out = 100)
+
+# Generate corresponding colors using viridis
+scale_colors <- viridis(length(scale_values))
+
+# Create tick positions on the log scale
+tick_positions <- seq(log(vec_range[1]), log(vec_range[2]), length.out = 5)
+
+# Convert log tick positions back to original scale for labeling
+tick_labels <- signif(exp(tick_positions), 2)
+
+# Plot the color bar
+par(mar = c(5, 1, 1, 5)) # Adjust margins for color bar
+image(
+  1, scale_values, t(as.matrix(scale_values)), 
+  col = scale_colors, 
+  axes = FALSE, 
+  xlab = "", 
+  ylab = "Log Scale", 
+  main = "Color Scale"
+)
+
+# Add axis labels at the specified tick positions
+axis(4, at = tick_positions, labels = tick_labels)
+box()
+
+
+"#472D7BFF" "#FDE725FF" "#AADC32FF" "#27AD81FF" "#21908CFF" "#2C728EFF"
+[7] "#5DC863FF" "#440154FF" "#3B528BFF"
 
 
 

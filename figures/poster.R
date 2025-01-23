@@ -7,15 +7,19 @@ dat <- dat[dat$thrs == 0.8, ]
 dat <- dat[dat$clade %in% c("Mammalia", "Sauria", "Actinopterygii"), ]
 dat <- dat[!is.na(dat$chromnum.1n), ]
 sub <- dat[dat$species %in% c("Bos taurus", "Peromyscus maniculatus bairdii"), ]
-cols <- c("#af8dc3", "#7fbf7b")[as.factor(sub$species)]
+sub$genecount <- sub$genecount / 1000
+cols <- c("#f4a582", "#0571b0")[as.factor(sub$species)]
 par(mar = c(6, 4, 2, 2)+0.1)
 plot(x = sub$size.Mbp,
-y = sub$genecount,
-xlab = NA,
-ylab = "Gene Count",
-col = cols,
-pch = 16)
-text(91, -150, "Chromosome Size (Mb)", xpd = NA, adj = 0)
+     y = sub$genecount,
+     xlab = NA,
+     ylab = "Gene count (thousands)",
+     ylim = c(0.3, 3), 
+     xlim = c(30, 200), 
+     col = cols,
+     cex = 1.5, 
+     pch = 16)
+text(91, -150, "Chromosome size (Mb)", xpd = NA, adj = 0)
 text(60, -600, "Bos taurus", xpd = NA, adj = 0)
 points(58, -610, pch = 16, col = "#af8dc3", xpd = NA, cex = 1.5)
 text(130, -600, "Peromyscus maniculatus bairdii", xpd = NA, adj = 0)
@@ -24,13 +28,13 @@ x1 <- sub[sub$species == "Bos taurus", ]$size.Mbp
 y1 <- sub[sub$species == "Bos taurus", ]$genecount
 model1 <- lm(y1 ~ x1)
 abline(model1,
-col = "#af8dc3",
+col = "#f4a582",
 lwd = 1.5)
 x2 <- sub[sub$species == "Peromyscus maniculatus bairdii", ]$size.Mbp
 y2 <- sub[sub$species == "Peromyscus maniculatus bairdii", ]$genecount
 model2 <- lm(y2 ~ x2)
 abline(model2,
-col = "#7fbf7b",
+col = "#0571b0",
 lwd = 1.5)
 par(mar = c(5.1, 4.1, 4.1, 2.1))
 
@@ -56,7 +60,7 @@ ylab = "R-squared")
 
 
 
-
+# r2 beeswarm
 library(beeswarm)
 dat <- read.csv("../results/parsed.csv")
 dat <- dat[dat$thrs == 0.8, ]
@@ -193,25 +197,19 @@ abline(model.rep,
 
 
 
-
-
+# largest repeats in each clade
+library(data.table)
+library(beeswarm)
+library(viridis)
 name <- cl <- r2 <- largest <- c()
 dat <- read.csv("../data/data.csv")
-
-# combine raw contig results
-library(data.table)
 dir <- "../results/individual_species_results"
 files <- paste0(dir, "/",  list.files(dir))
 contigs <- lapply(files, fread)
 contigs <- as.data.frame(rbindlist((contigs), fill = TRUE))
-
-# parse by contig size
 contigs <- contigs[contigs$size.Mbp >= 10, ]
-
-# remove species with less than 3 contigs
 rm <- names(table(contigs$species)[table(contigs$species) < 3])
 contigs <- contigs[!(contigs$species %in% rm), ]
-
 df <- data.frame()
 parsed <- data.frame()
 for (z in unique(contigs$species)) {
@@ -222,8 +220,6 @@ for (z in unique(contigs$species)) {
     parsed <- rbind(parsed, sub)
   }
 }
-
-# calculate stats based on parsed results
 sp <- unique(parsed$species)
 for (species in sp) {
   sub <- parsed[which(parsed$species == species), ]
@@ -239,8 +235,6 @@ for (species in sp) {
   sub <- merge(dat[dat$species == species, ], sub, by = "species", all = TRUE)
   df <- rbind(df, sub)
 }
-
-#assign clades
 df$clade <- df$class
 df[df$clade %in% "Aves", ]$clade <- "Sauria"
 df[df$clade %in% "Reptilia", ]$clade <- "Sauria"
@@ -252,20 +246,15 @@ asmbsz <- df[!duplicated(df$species), ]
 asmbsz <- asmbsz[asmbsz$species %in% sp, ]
 asmbsz <- setNames(asmbsz$asmblysize.Mbp*1000000, asmbsz$species)
 repstats <- data.frame()
-
 for (i in 1:length(sp)) {
   species <- sp[i]
-  # read text file into lines
   divsum <- readLines(paste0("../results/divsums/", files[i]))
-  # look for the start of relevant information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, divsum) + 1
-  # condense relevant lines into a table
   divsum <- divsum[start.index:length(divsum)]
   divsum <- read.table(textConnection(divsum), 
                        sep = " ", 
                        header = TRUE)
-  # drop columns with all NA
   divsum <- divsum[-c(which(sapply(divsum, function(col) all(is.na(col)))))]
   divsum <- colSums(divsum)
   name <- c(name, species)
@@ -274,12 +263,6 @@ for (i in 1:length(sp)) {
   largest <- c(largest, names(tail(sort(divsum), 1)))
 }
 df <- data.frame(name, cl, r2, largest)
-
-
-
-
-library(beeswarm)
-library(viridis)
 df <- df[df$cl %in% c("Mammalia", "Actinopterygii", "Sauria"), ]
 df$cl <- factor(df$cl, levels = c("Mammalia", "Actinopterygii", "Sauria"))
 df$largest[df$largest %in% c("DNA.TcMar.Tc1", "LINE.L2", "SINE.tRNA.Core")] <- "Others"
@@ -288,26 +271,25 @@ cols <- map[df$cl]
 par(mar = c(5, 4, 4, 7)+0.1)
 beeswarm(r2 ~ largest, 
          data = df, 
-         xlab = "Largest repeat class by size", 
+         xlab = NA, 
          ylab = "R2", 
          pch = 16, 
          pwcol = cols, 
          spacing = 1.1, 
          at = c(1, 1.92, 3, 4.08, 5), 
          labels = c("LINE/CR1", "LINE/L1", "LINE/RTE-BovB", "Others", "Unclassified"))
-text(8.02, (0.25+((0.8-0.25))), "Mammalia", xpd = NA, adj = 0)
-text(8.02, (0.25+(2*(0.8-0.25)/3)), "Actinopterygii", xpd = NA, adj = 0)
-text(8.02, (0.25+((0.8-0.25)/3)), "Sauria", xpd = NA, adj = 0)
-text(8.02, 0.25, "Others", xpd = NA, adj = 0)
-points(7.92, (0.25+((0.8-0.25))), pch = 16, col = "#FDE725FF", xpd = NA)
-points(7.92, (0.25+(2*(0.8-0.25)/3)), pch = 16, col = "#31688EFF", xpd = NA)
-points(7.92, (0.25+((0.8-0.25)/3)), pch = 16, col = "#35B779FF", xpd = NA)
+text(1.5, -0.32, "Mammals", xpd = NA, adj = c(0.5, 0.5))
+text(3.166667, -0.32, "Ray-finned fish", xpd = NA, adj = c(0.5, 0.5))
+text(4.833334, -0.32, "Reptiles", xpd = NA, adj = c(0.5, 0.5))
+points(1, -0.326, cex = 1.5, pch = 16, col = "#d95f02", xpd = NA, adj = 0)
+points(2.46, -0.326, cex = 1.5, pch = 16, col = "#7570b3", xpd = NA)
+points(4.39, -0.326, cex = 1.5, pch = 16, col = "#1b9e77", xpd = NA)
 par(mar = c(5.1, 4.1, 4.1, 2.1))
 
 
 
 
-
+# repeat landscape
 dat <- read.csv("../results/parsed.csv")
 dat <- dat[dat$thrs == 0, ]
 dat <- dat[!duplicated(dat$species), ]
@@ -320,20 +302,14 @@ cols <- c("#e31a1c", "#fb9a99", "#33a02c", "#b2df8a", "#1f78b4", "#a6cee3")
 par(mar = c(3, 4, 1, 7)+0.1)
 for (i in c(19, 138)) {
   species <- sp[i]
-  # read text file into lines
   divsum <- readLines(paste0("../results/divsums/", files[i]))
-  # look for the start of relevant information
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, divsum) + 1
-  # condense relevant lines into a table
   divsum <- divsum[start.index:length(divsum)]
   divsum <- read.table(textConnection(divsum), 
                        sep = " ", 
                        header = TRUE)
-  # drop columns with all NA
   divsum <- divsum[-c(which(sapply(divsum, function(col) all(is.na(col)))))]
-  
-  # condense table
   classes <- c("LINE", "SINE", "LTR", "DNA", "Div", "Unknown")
   for (j in classes) {
     pat <- paste0("^", j, "(\\.|$)")
@@ -349,9 +325,9 @@ for (i in c(19, 138)) {
   divsum <- divsum[, 1:51]
   divsum <- divsum[nrow(divsum):1, ]
   barplot(divsum, 
-          col = cols, # Assign different colors to each group
-          space = 0,                       # No space between bars for a continuous look
-          border = NA,                     # Remove borders for cleaner appearance
+          col = cols, 
+          space = 0, 
+          border = NA, 
           xlab = NA, 
           ylab = NA, 
           ylim = c(0, 1.1*3.049599))
@@ -371,3 +347,37 @@ for (i in c(19, 138)) {
   points(53, pos[1], pch = 15, col = cols[1], xpd = NA, cex = 1.5)
 }
 par(mar = c(5.1, 4.1, 4.1, 2.1))
+
+
+
+
+
+# phylogeny
+library(phytools)
+library(viridis)
+dat <- read.csv("../results/parsed.csv")
+dat <- dat[dat$thrs == 0.8, ]
+dat <- dat[!duplicated(dat$species), ]
+dat <- dat[, c("species", "clade", "rsq")]
+tree <- read.tree("../data/formatted_tree.nwk")
+tree$tip.label <- gsub("_", " ", tree$tip.label)
+int <- intersect(tree$tip.label, dat$species)
+pruned.tree <- keep.tip(tree, int)
+pruned.tree <- ladderize(pruned.tree)
+dat <- dat[dat$species %in% int, ]
+dat <- dat[match(pruned.tree$tip.label, dat$species), ]
+rsq <- setNames(dat$rsq, dat$species)
+p <- contMap(pruned.tree, rsq, plot = FALSE)
+p <- setMap(p, viridis(n=300))
+plot(p, 
+     res = 300,
+     lwd = c(1.5, 5),
+     fsize = c(0.3, 0.5), 
+     outline = FALSE,
+     sig = 2,
+     xlim = c(0, 115), 
+     ylim = c(-150, 450),  #450
+     direction = "downwards", 
+     ftype = "off", 
+     plot = TRUE)
+

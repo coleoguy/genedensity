@@ -171,7 +171,9 @@ for (thrs in (0:100)*0.01) {
       
       # initial model selection
       formula <- reformulate(terms[-1], "rsq")
-      model <- get.models(dredge(glm(formula, data = dat)), 1)[[1]]
+      model <- step(glm(formula, data = dat))
+      effects <- data.frame(summary(model)$coefficients)[terms, ]
+      # model <- get.models(dredge(glm(formula, data = dat), subset = dc(x1, x2, x1:x2)), 1)[[1]]
       
       # if phylogenetic signals are present in the residuals, use PGLS
       res <- setNames(resid(model), dat$species)
@@ -179,14 +181,14 @@ for (thrs in (0:100)*0.01) {
       if (signal < 0.05) {
         sig <- TRUE
         cd <- comparative.data(pruned.tree, dat, names.col = "species", vcv = T)
-        model <- get.models(dredge(pgls(formula, data = cd)), 1)[[1]]
+        model <- get.models(dredge(pgls(formula, data = cd), subset = dc(x1, x2, x1:x2)), 1)[[1]]
         effects <- data.frame(summary(model)$coefficients)[terms, ]
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(cd$data), "p", effects$Pr...t.., rsquared(model)[[5]])))
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(cd$data), "beta", effects$Estimate, rsquared(model)[[5]])))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(cd$data), "p", effects$Pr...t.., rsquared(model)[[5]]/(1-rsquared(model)[[5]]))))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(cd$data), "beta", effects$Estimate, rsquared(model)[[5]]/(1-rsquared(model)[[5]]))))
       } else {
         sig <- FALSE
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(dat), "p", effects$Pr...t.., rsquared(model)[[5]])))
-        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(dat), "beta", effects$Estimate, rsquared(model)[[5]])))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(dat), "p", effects$Pr...t.., rsquared(model)[[5]]/(1-rsquared(model)[[5]]))))
+        lis <- c(lis, list(c(cl, thrs, qwe, sig, nrow(dat), "beta", effects$Estimate, rsquared(model)[[5]]/(1-rsquared(model)[[5]]))))
       }
     }
   }
@@ -201,8 +203,8 @@ for (thrs in (0:100)*0.01) {
 
 
 df <- as.data.frame(do.call(rbind, lis))
-names(df) <- c("clade", "thrs", "repeat", "phylosig", "n", "stat", "intercept", terms[-1], "R2")
-num <- c("thrs", "intercept", terms[-1], "R2")
+names(df) <- c("clade", "thrs", "repeat", "phylosig", "n", "stat", "intercept", terms[-1], "f2")
+num <- c("thrs", "intercept", terms[-1], "f2")
 df[, num] <- lapply(df[, num], as.numeric)
 # some stuff are lists
 df[] <- lapply(df, function(x) if(is.list(x)) sapply(x, paste, collapse=",") else x)
@@ -220,7 +222,7 @@ terms <- c(
   "chromnum.1n:median.trans:rep.prop"
 )
 df <- read.csv("../results/models.csv")
-names(df) <- c("clade", "thrs", "repeat", "phylosig", "n", "stat", terms, "R2")
+names(df) <- c("clade", "thrs", "repeat", "phylosig", "n", "stat", terms, "f2")
 
 
 # models where every term is either significant or NA
@@ -237,11 +239,13 @@ df1 <- df1[, hit]
 # get beta coefficients for significant combinations
 df2 <- merge(df, df1, by = intersect(names(df), names(df1)))
 df2 <- df2[df2$stat == "beta", ]
-
-
-
-df2 <- df2[!df2$clade %in% "Sauria", ]
 df2 <- df2[!df2$`repeat` %in% "rc", ]
+df2 <- df2[order(df2$thrs), ]
+df2 <- df2[order(df2$`repeat`), ]
+df2 <- df2[order(df2$clade), ]
+rownames(df2) <- c(1:nrow(df2))
+df2 <- df2[-c(1, 5, 6, 16, 17, 37:81, 102:111, 112:114), ]
+
 
 #combinations of clades and repeats
 df3 <- unique(df2[, c("clade", "repeat"), ])
@@ -251,12 +255,12 @@ for (i in 1:nrow(df3)) {
   rep <- df3[i, ][[2]]
   sub <- df2[df2$clade == cl, ]
   sub <- sub[sub$`repeat` == rep, ]
-  sub <- sub[sub$thrs == round(mean(sub$thrs), 2), ][, 8:14]
-  beta <- sub[which(!is.na(sub))]
-  l <- c(l, list(c(cl, rep, beta)))
+  f2 <- mean(sub$f2)
+  l <- c(l, list(c(cl, rep, f2)))
 }
 df4 <- as.data.frame(do.call(rbind, l))
-vec <- abs(unlist(df4$median.trans))
+df4 <- df4[-c(5:6), ]
+vec <- as.numeric(df4$V3)
 library(viridis)
 cols <- viridis(300)
 image(1, seq(0, 3, length.out = 300), t(seq(0, 3, length.out = 300)), col = cols, axes = FALSE, xlab = "", ylab = "")
@@ -264,13 +268,14 @@ axis(4)
 
 
 
-num <- vec / 3
+num <- vec / 1
 cols <- viridis(300)
 ramp <- colorRamp(cols, interpolate = "linear")
 rgb(ramp(num), maxColorValue = 255)
 
 
-"#1FA286" "#E1E318" "#23898D" "#1F998A" "#23888E" "#23888E"
+"#25AC81" "#2E6C8E" "#2E6D8E" "#3C4F8A" "#481769" "#33628D" "#453480"
+[8] "#433D84"
 
 
 
