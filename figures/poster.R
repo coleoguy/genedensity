@@ -111,6 +111,7 @@ library(phytools)
 library(caper)
 dat <- read.csv("../results/parsed.csv")
 dat <- dat[dat$thrs == 0, ]
+dat <- dat[!is.na(dat$chromnum.1n), ]
 dat <- dat[!duplicated(dat$species), ]
 dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauria"))
 dat <- na.omit(dat[, c("species", "clade", "rsq", "est.gnsz.Mbp")])

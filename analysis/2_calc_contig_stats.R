@@ -15,15 +15,16 @@ contigs <- lapply(files, fread)
 contigs <- as.data.frame(rbindlist((contigs), fill = TRUE))
 
 # parse by contig size
-contigs <- contigs[contigs$size.Mbp >= 10, ]
+# contigs <- contigs[contigs$size.Mbp >= 10, ]
 
 # remove species with less than 3 contigs
-rm <- names(table(contigs$species)[table(contigs$species) < 3])
-contigs <- contigs[!(contigs$species %in% rm), ]
+# rm <- names(table(contigs$species)[table(contigs$species) < 3])
+# contigs <- contigs[!(contigs$species %in% rm), ]
 
 df <- data.frame()
 # contig sum/assembly size ratio threshold
-for (thrs in seq(from = 0, to = 0.9, by = 0.05)) {
+# for (thrs in seq(from = 0, to = 0.9, by = 0.05)) {
+for (thrs in c(0.9)) {
   # remove species if sum of contig sizes is not within some multiple of assembly size
   parsed <- data.frame()
   for (z in unique(contigs$species)) {
