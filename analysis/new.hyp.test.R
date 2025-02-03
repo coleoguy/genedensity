@@ -27,9 +27,11 @@ for (i in sp) { # for each species
   med <- median(df1$cv)
   df <- rbind(df, data.frame(i, med))
 }
+dat <- merge(dat, df, by.y = "i", by.x = "species", all.x = TRUE)
+write.csv(dat, "../results/parsed.csv", row.names = FALSE)
 
+dat <- read.csv("../results/parsed.csv")
 dat <- dat[!duplicated(dat$species), ]
-dat <- merge(dat, df, by.y = "i", by.x = "species")
 dat <- dat[, c("species", "med", "rsq")]
 plot(dat$med, dat$rsq)
 model <- glm(rsq ~ med, data = dat)

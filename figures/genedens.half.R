@@ -3,6 +3,7 @@
 # chromosome so that one fragment has high gene density variation and another
 # has low gene density variation. 
 
+library(viridis)
 # visualize gene density variation on either half of chromosomes
 dat <- read.csv("../results/parsed.csv")
 sp <- gsub("_", " ", sub("\\..*", "", list.files("../data/annot")))
@@ -13,6 +14,9 @@ for (i in sp) { # for each species
   annot <- annot[annot[, 3] == "gene", ]
   annot[, c(4, 5)] <- annot[, c(4, 5)] / 1000000
   chromnum <- nrow(dat[dat$species == i, ])
+  if (chromnum == 0) {
+    next
+  }
   max.chromsize <- max(dat[dat$species == i, ]$size.Mbp)
   df <- data.frame()
   for (j in dat[dat$species == i, ]$name) { # for each chromosome
