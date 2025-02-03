@@ -32,8 +32,11 @@ write.csv(dat, "../results/parsed.csv", row.names = FALSE)
 
 dat <- read.csv("../results/parsed.csv")
 dat <- dat[!duplicated(dat$species), ]
-dat <- dat[, c("species", "med", "rsq")]
-plot(dat$med, dat$rsq)
+dat <- dat[, c("species", "med", "rsq", "clade")]
+map <- c("Mammalia" = "#d95f02", "Actinopterygii" = "#7570b3", "Sauria" = "#1b9e77")
+cols <- map[dat$clade]
+cols <- adjustcolor(cols, alpha.f = 0.5)
+plot(dat$med, dat$rsq, col = cols, pch = 16, xlab = "Median CV", ylab = "R2")
 model <- glm(rsq ~ med, data = dat)
 summary(model)
 
