@@ -6,7 +6,7 @@
 library(ape)
 library(dispRity)
 source("../analysis/functions.R")
-dat <- read.csv("../results/parsed.csv")
+dat <- read.csv("../data/data.csv")
 tree <- read.tree("../data/chordates_species.nwk")
 
 # format and prune tree

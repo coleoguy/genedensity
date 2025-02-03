@@ -9,7 +9,8 @@ dat <- read.csv("../data/data.csv")
 
 # combine raw contig results
 library(data.table)
-dir <- "../results/individual_species_results"
+# dir <- "../results/individual_species_results"
+dir <- "../results/chromlevel"
 files <- paste0(dir, "/",  list.files(dir))
 contigs <- lapply(files, fread)
 contigs <- as.data.frame(rbindlist((contigs), fill = TRUE))
@@ -24,7 +25,7 @@ contigs <- as.data.frame(rbindlist((contigs), fill = TRUE))
 df <- data.frame()
 # contig sum/assembly size ratio threshold
 # for (thrs in seq(from = 0, to = 0.9, by = 0.05)) {
-for (thrs in c(0.9)) {
+for (thrs in c(0.95)) {
   # remove species if sum of contig sizes is not within some multiple of assembly size
   parsed <- data.frame()
   for (z in unique(contigs$species)) {

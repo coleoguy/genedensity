@@ -18,11 +18,13 @@
 
 
 # verbose
-verbose <- F
+verbose <- T
 # is ensembl genome? setting to TRUE will run much faster
 ensembl <- F
+# gff3 or gtf annotation file?
+annot <- "gtf"
 # keywords to match and exclude mitochondrial contigs for assembly size calcs
-mito.keywords <- c("mt", "mito", "mitochondrial", "nonchromosomal")
+#mito.keywords <- c("mt", "mito", "mitochondrial", "nonchromosomal")
 
 # load library
 library(data.table)
@@ -52,11 +54,11 @@ for (species in all.species) {
     # get chromosome number
     chromnum.1n <- chromnums$chromnum.1n[chromnums$species == species]
     # proceed if chromosme number is available, else go to next species
+    # if (is.na(chromnum.1n)) {
+    #    chromnum.1n <- chromnums$chromnum.est[chromnums$species == species]
+    # } 
     if (is.na(chromnum.1n)) {
-      chromnum.1n <- chromnums$chromnum.est[chromnums$species == species]
-    } 
-    if (is.na(chromnum.1n)) {
-      chromnum.1n <- 50
+      chromnum.1n <- 60
     } 
     # create full paths for files. sort alphabetically to place
     # the fasta file in front of the gff3/gtf file
@@ -66,10 +68,11 @@ for (species in all.species) {
     # assume first file is fasta
     fasta.path <- genome.files[1]
     # assume second file is gff3/gtf/gbff
-    annot.path <- genome.files[2]
+    annot.path <- genome.files[length(genome.files)]
     # read fasta
     fasta.data <- dataFromFasta(
-      fasta.path, chromnum.1n, mito.keywords, verbose, ensembl)
+      fasta.path, chromnum.1n, verbose, ensembl)
+    # fasta.path, chromnum.1n, mito.keywords, verbose, ensembl)
     name <- fasta.data$name
     size.Mbp <- fasta.data$size.Mbp
     asmblysize.Gbp <- unique(fasta.data$asmblysize.Gbp)
@@ -77,7 +80,8 @@ for (species in all.species) {
     gc()
     if (length(name) != 0) {
       # read gtf/gff3
-      genecount <- dataFromGtf(annot.path, name, mito.keywords, verbose, annot)
+      # genecount <- dataFromGtf(annot.path, name, mito.keywords, verbose, annot)
+      genecount <- dataFromGtf(annot.path, name, verbose, annot)
       # proceed if gene count is available for more than one contig
       if (sum(is.na(genecount)) < length(name)) {
         # assemble datatable

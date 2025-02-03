@@ -5,9 +5,10 @@
 library(phytools)
 library(viridis)
 dat <- read.csv("../results/parsed.csv")
-dat <- dat[dat$thrs == 0.8, ]
+dat <- dat[dat$thrs == 0.95, ]
+dat <- dat[!is.na(dat$chromnum.1n), ]
 dat <- dat[!duplicated(dat$species), ]
-dat <- dat[, c("species", "clade", "rsq")]
+dat <- dat[, c("species", "clade", "rsq", "chromnum.1n")]
 tree <- read.tree("../data/formatted_tree.nwk")
 tree$tip.label <- gsub("_", " ", tree$tip.label)
 int <- intersect(tree$tip.label, dat$species)
@@ -17,7 +18,9 @@ dat <- dat[dat$species %in% int, ]
 dat <- dat[match(pruned.tree$tip.label, dat$species), ]
 
 rsq <- setNames(dat$rsq, dat$species)
+chromnum <- setNames(dat$chromnum.1n, dat$species)
 p <- contMap(pruned.tree, rsq, plot = FALSE)
+# p <- contMap(pruned.tree, chromnum, plot = FALSE)
 p <- setMap(p, viridis(n=300))
 
 
@@ -45,3 +48,19 @@ plot(p,
 #     xlim = c(-500, 500), 
 #     ylim = c(-500, 500), 
 #     plot = TRUE)
+
+
+plot(p, 
+     res = 300,
+     lwd = c(1.5, 5),
+     fsize = c(0.5, 0.5), 
+     outline = FALSE,
+     sig = 2,
+     xlim = c(0, 42), 
+     ylim = c(-200, 450),  #450
+     direction = "downwards", 
+     plot = TRUE)
+
+
+
+
