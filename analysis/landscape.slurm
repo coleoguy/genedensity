@@ -1,57 +1,51 @@
 #!/bin/bash
 
+#SBATCH --job-name=align1
+#SBATCH --output=align1.out
+#SBATCH --error=align1.err
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=40
+#SBATCH --mem=25G
+#SBATCH --time=7-00:00:00
+
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=zhaobohu2002@gmail.com
+
 # config
-threads=30
+threads=40
 # path to data directory
-data=/mnt/md0/genedensity/landscape/genomes
+data=/scratch/user/zhu13/landsc_dat1
 # path to result directory
-divsums=/mnt/md0/genedensity/landscape
+divsums=/home/zhu13/landscape
 # path to ID library for famdb.py
-library=/home/blackmonlab/anaconda3/envs/Genome_Masking/share/RepeatMasker/Libraries/RepeatMaskerLib.h5
+library=/scratch/user/zhu13/.conda/envs/genomeMasking/share/RepeatMasker/Libraries/RepeatMaskerLib.h5
 
 # set locale
 export LANG=en_US.utf8
 export LC_ALL=en_US.utf8
 
-# activate conda environment
-source /home/blackmonlab/anaconda3/etc/profile.d/conda.sh
-conda activate Genome_Masking || { echo "Failed to activate conda environment"; exit 1; }
+# conda environment
+source ~/.bashrc
+conda init bash
+conda activate genomeMasking
 
-# BuildDatabase, calcDivergenceFromAlign.pl, RepeatMasker, RepeatModeler:famdb.py
-export PATH=$PATH:/home/blackmonlab/anaconda3/envs/Genome_Masking/bin:/home/blackmonlab/anaconda3/envs/Genome_Masking/share/RepeatMasker
+# famdb.py
+export PATH=$PATH:/scratch/user/zhu13/.conda/envs/genomeMasking/share/RepeatMasker
+
+# BuildDatabase, calcDivergenceFromAlign.pl, RepeatMasker, RepeatModeler
+export PATH=$PATH:/scratch/user/zhu13/.conda/envs/genomeMasking/bin
+
 # SearchResult.pm
-export PERL5LIB=/home/blackmonlab/anaconda3/envs/Genome_Masking/share/RepeatMasker:$PERL5LIB
+export PERL5LIB=/scratch/user/zhu13/.conda/envs/genomeMasking/share/RepeatMasker:$PERL5LIB
 
-
-
-
-# set up logs
-jobname="align1"
-mkdir -p "${divsums}/logs"
-if [ $? -ne 0 ]; then
-  echo "Error: Failed to create log directory at ${divsums}/logs"
-  exit 1
-fi
-stdout="${divsums}/logs/${jobname}.out"
-stderr="${divsums}/logs/${jobname}.err"
-exec > "${stdout}" 2> "${stderr}"
-
-echo "Redirecting output to ${stdout}"
-echo "Redirecting errors to ${stderr}" 1>&2
-
-
-
-
-# Start loop
+# start loop
 while IFS=, read -r species family; do
-  # If species is non-empty, proceed
-  if [[ -n "$species" ]]; then
-    echo "Processing species: $species"
+  [[ -n "$species" ]] && {
 
-    # Try to change to the species directory
+    echo "Processing species: $species"
     cd "$data"/"$species" || { echo "Failed to change directory to $data/$species"; continue; }
 
-    # Get species id
+    # get species id
     family_clean=$(echo "$family" | sed 's/[^a-zA-Z0-9 ]//g' | sed 's/^[ \t]*//;s/[ \t]*$//')
     id=$(famdb.py -i "$library" names "$family_clean" | sed -n '3p' | awk '{print $1}')
     if [[ -z "$id" ]]; then
@@ -59,28 +53,32 @@ while IFS=, read -r species family; do
       continue  # Skip to the next iteration if the ID isn't found
     fi
 
-    # Create databases
+    # create databases
     mkdir -p "$data"/"$species"/deNovo
     cd "$data"/"$species"/deNovo || { echo "Error: Failed to change directory to $data/$species/deNovo"; continue; }
     BuildDatabase -name "$id"_"$species" -engine ncbi "$data"/"$species"/fasta.fa || { echo "Error: BuildDatabase failed"; continue; }
 
-    # De-novo repeat identification
+    # de-novo repeat identification
     RepeatModeler -database "$id"_"$species" -threads "$threads" -quick || { echo "Error: RepeatModeler failed"; continue; }
 
-    # Get existing library
+    # get existing library
     cd "$data"/"$species" || { echo "Error: Failed to change directory to $data/$species"; continue; }
     famdb.py -i "$library" families --format fasta_name --include-class-in-name --ancestors --descendants "$id" > "$data"/"$species"/knownRepeats.fa || { echo "Error: famdb.py failed"; continue; }
 
-    # Combine libraries
+    # combine libraries
     cat "$data"/"$species"/deNovo/"$id"_"$species"-families.fa "$data"/"$species"/knownRepeats.fa > "$data"/"$species"/temp.fa
     sed '/^[[:space:]]*$/d' "$data"/"$species"/temp.fa > "$data"/"$species"/allRepeats.fa
     rm -f "$data"/"$species"/temp.fa
 
-    # Run RepeatMasker to align sequences
+    # run repeatmasker to align sequences
     RepeatMasker -qq -a -pa "$threads" -lib "$data"/"$species"/allRepeats.fa "$data"/"$species"/fasta.fa || { echo "Error: RepeatMasker failed"; continue; }
 
-    # Calculate k2p distance
+    # calculate k2p distance
     calcDivergenceFromAlign.pl -s "$divsums"/"$species".divsum "$data"/"$species"/fasta.fa.align || { echo "Error: calcDivergenceFromAlign.pl failed"; continue; }
-  fi
-done < "$data"/to.mask.csv
 
+    # remove directory to save file quota
+    cd "$data"
+    rm "$data"/"$species" || { echo "Failed to remove $data/$species"; continue; }
+  }
+
+done < "$data"/to.mask.csv
