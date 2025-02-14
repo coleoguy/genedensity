@@ -24,7 +24,8 @@ contigs <- contigs[!(contigs$species %in% rm), ]
 
 df <- data.frame()
 # contig sum/assembly size ratio threshold
-for (thrs in seq(from = 0, to = 1, by = 0.01)) {
+# for (thrs in seq(from = 0, to = 1, by = 0.01)) {
+for (thrs in c(0.8, 0.9)) {
 # for (thrs in c(0.95)) {
   # remove species if sum of contig sizes is not within some multiple of assembly size
   parsed <- data.frame()

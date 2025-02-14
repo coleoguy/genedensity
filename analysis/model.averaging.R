@@ -1,12 +1,13 @@
 
 
 
-# for each repeat in each clade in each threshold, fit a glm model where the 
-# response is r2 and the predictors are (divergence containing 1/2 repeat sum), 
-# repeat proportion, and the interaction of these two terms. then, select
-# for the best model using step(). if the residuals of this model show 
-# phylogenetic signal, fit a PGLS model instead and select the best model using
-# AIC (step() doesn't work for PGLS objects)
+# for each repeat in each clade, make all 5 possible GLM models with repeat age, 
+# repeat proportion, and their interaction as the three predictor variables and 
+# R2 as the response variable. Average the 5 models. If the residuals of the
+# averaged model shows phylogenetic signal, make and average PGLS models instead. 
+# for each model, the script will record the clade, repeat, beta coefficients,
+# p values for beta coefficients, and the p value for lambda-based phylogenetic
+# signal
 
 # helper functions
 # universal ordering of a table of 5 models
@@ -94,8 +95,9 @@ for (cl in c("Total", "Mammalia", "Actinopterygii", "Sauria")) {
     glm.models <- get.models(glm.models, subset = 1:nrow(glm.models))
     glm.avg <- model.avg(glm.models)
     res <- setNames((sub$rsq - predict(glm.avg, type = "response")), sub$species)
-    res.physig.p <- as.data.frame(t(setNames(phylosig(pruned.tree, res, method="lambda", test=TRUE)[[4]], "res.physig.p")))
+    res.physig.p <- phylosig(pruned.tree, res, method="lambda", test=TRUE)[[4]]
     if (res.physig.p < 0.05) {
+      pgls <- TRUE
       cd <- comparative.data(pruned.tree, sub, names.col = "species", vcv = T)
       pgls.models <- dredge(pgls(formula, data = cd), subset = dc(x1, x2, x1:x2))
       pgls.models <- sortModels(pgls.models)
@@ -107,39 +109,15 @@ for (cl in c("Total", "Mammalia", "Actinopterygii", "Sauria")) {
       p <- as.data.frame(t(summary(pgls.avg)$coefmat.full[, "Pr(>|z|)"]))
       names(p) <- c("intercept.p", "age.p", "prop.p", "interact.p")
     } else {
+      pgls<- FALSE
       summary(glm.avg)$coefmat.full
       beta <- as.data.frame(t(summary(glm.avg)$coefmat.full[, "Estimate"]))
       names(beta) <- c("intercept.b", "age.b", "prop.b", "interact.b")
       p <- as.data.frame(t(summary(glm.avg)$coefmat.full[, "Pr(>|z|)"]))
       names(p) <- c("intercept.p", "age.p", "prop.p", "interact.p")
     }
-    lis <- list(lis, cbind(head, res.physig.p, beta, p))
-    
-    # for each GLM
-    for (i in 1:nrow(glm.models)) {
-      model <- get.models(glm.models, i)[[1]]
-      p <- as.data.frame(t(setNames(data.frame(summary(model)$coefficients)[terms, ]$Pr...t.., 
-                    c("intercept.p", "age.p", "rep.p", "interact.p"))))
-      res <- setNames(resid(model), sub$species)
-      res.physig.p <- as.data.frame(t(setNames(phylosig(pruned.tree, res, method="lambda", test=TRUE)[[4]], "res.physig.p")))
-      out <- cbind(head, as.data.frame(glm.models)[i, ], res.physig.p, p)
-      lis <- c(lis, list(out))
-    }
-    
-    # find all PGLS models
-    cd <- comparative.data(pruned.tree, sub, names.col = "species", vcv = T)
-    pgls.models <- dredge(pgls(formula, data = cd), subset = dc(x1, x2, x1:x2))
-    pgls.models <- sortModels(pgls.models)
-    
-    # for each PGLS 
-    for (i in 1:nrow(pgls.models)) {
-      model <- get.models(pgls.models, i)[[1]]
-      p <- as.data.frame(t(setNames(data.frame(summary(model)$coefficients)[terms, ]$Pr...t.., 
-                                    c("intercept.p", "age.p", "rep.p", "interact.p"))))
-      res.physig.p <- as.data.frame(t(setNames(NA, "res.physig.p")))
-      out <- cbind(head, as.data.frame(pgls.models)[i, ], res.physig.p, p)
-      lis <- c(lis, list(out))
-    }
+    end <- data.frame(res.physig.p, pgls)
+    lis <- c(lis, list(cbind(head, beta, p, end)))
   }
 }
 
@@ -150,11 +128,8 @@ for (cl in c("Total", "Mammalia", "Actinopterygii", "Sauria")) {
 df <- as.data.frame(do.call(rbind, lis))
 
 # write
-write.csv(df, file = "../results/AICs.csv", row.names = F)
-
-
-
-df <- read.csv("../results/AICs.csv")
+write.csv(df, file = "../results/model.average.csv", row.names = F)
+df <- read.csv("../results/model.average.csv")
 
 
 
