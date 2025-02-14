@@ -90,6 +90,14 @@ for (cl in c("Total", "Mammalia", "Actinopterygii", "Sauria")) {
     glm.models <- dredge(glm(formula, data = sub, na.action = na.fail), subset = dc(x1, x2, x1:x2))
     glm.models <- sortModels(glm.models)
     
+    # TEST
+    # glm.models <- get.models(glm.models, subset = 1:nrow(glm.models))
+    # glm.avg <- model.avg(glm.models)
+    # res <- setNames((sub$rsq - predict(glm.avg, type = "response")), sub$species)
+    # res.physig.p <- as.data.frame(t(setNames(phylosig(pruned.tree, res, method="lambda", test=TRUE)[[4]], "res.physig.p")))
+    
+    
+    
     # for each GLM
     for (i in 1:nrow(glm.models)) {
       model <- get.models(glm.models, i)[[1]]
