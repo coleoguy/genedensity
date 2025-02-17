@@ -33,10 +33,9 @@ sortModels <- function(x) {
 
 
 
-library(caper) # apply PGLS
+library(caper) # make PGLS models
 library(data.table) # quickly read data
 library(MuMIn) # calculate AIC
-library(piecewiseSEM) # calculate R2 for PGLS objects
 library(phytools) # phy stuff
 terms <- c(
   "(Intercept)", 

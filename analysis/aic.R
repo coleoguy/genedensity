@@ -30,8 +30,6 @@ sortModels <- function(x) {
   return(x[order, ])
 }
 
-
-
 library(caper) # apply PGLS
 library(data.table) # quickly read data
 library(MuMIn) # calculate AIC
@@ -143,18 +141,13 @@ for (cl in c("Total", "Mammalia", "Actinopterygii", "Sauria")) {
   }
 }
 
-    
-
-
 # convert list into dataframe
 df <- as.data.frame(do.call(rbind, lis))
 
 # write
 write.csv(df, file = "../results/AICs.csv", row.names = F)
 
-
-
+# show results
 df <- read.csv("../results/AICs.csv")
-
-
-
+df <- df[, c("cl", "rep", "median.trans", "rep.prop", "median.trans.rep.prop", "AICc", "delta", "res.physig.p")]
+df <- df[is.na(df$res.physig.p), ]
