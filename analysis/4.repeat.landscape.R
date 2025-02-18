@@ -23,8 +23,8 @@ for (i in 1:length(sp)) {
   divsum <- divsum[-c(which(sapply(divsum, function(col) all(is.na(col)))))]
   
   # condense table
-  classes <- c("LINE", "SINE", "LTR", "DNA", "RC", "Div", "Unknown")
-  for (j in classes) {
+  col.to.keep <- c("DNA", "LINE", "LTR", "SINE", "Div", "Unknown")
+  for (j in col.to.keep) {
     pat <- paste0("^", j, "(\\.|$)")
     headers <- grep(pat, names(divsum), value = TRUE)
     sub <- divsum[, headers]
@@ -33,44 +33,44 @@ for (i in 1:length(sp)) {
     assign(j, sums)
   }
   Others <- rowSums(as.matrix(divsum))
-  divsum <- data.frame(Div, LINE, SINE, LTR, DNA, RC, Others, Unknown)
-  
-  # all repeat total and median
+  divsum <- data.frame(Div, DNA, LINE, LTR, SINE, Others, Unknown)
   rep.bp <- rowSums(divsum[, !names(divsum) == "Div"])
-  total.rep.pct <- sum((rep.bp / asmbsz[sp[i]]) * 100)
-  total.rep.median <- which(cumsum(rep.bp) > sum(rep.bp)/2)[1]
   
-  for (k in classes) {
-    assign(paste0(tolower(k), ".rep.pct"), sum(divsum[k] /  asmbsz[sp[i]] * 100))
-    assign(paste0(tolower(k), ".rep.median"), which(cumsum(divsum[k]) > sum(divsum[k])/2)[1])
+  # set which repeats to record
+  rep <- colnames(divsum)[!colnames(divsum) %in% c("Div")]
+  
+  # find repeat %
+  df <- data.frame(species)
+  df$rep.prop.total <- sum(rep.bp) / asmbsz[sp[i]]
+  for (k in rep) {
+    name <- paste0("rep.prop.", tolower(k))
+    assign(name, sum(divsum[k] /  asmbsz[sp[i]] * 100))
+    df[[name]] <- get(name)
   }
   
-  # build dataframe
-  df <- data.frame(species, 
-                   total.rep.pct, 
-                   total.rep.median, 
-                   line.rep.pct, 
-                   line.rep.median, 
-                   sine.rep.pct, 
-                   sine.rep.median, 
-                   ltr.rep.pct, 
-                   ltr.rep.median, 
-                   dna.rep.pct, 
-                   dna.rep.median, 
-                   rc.rep.pct, 
-                   rc.rep.median
-  )
+  # find repeat age
+  rep <- unlist(lapply(1:length(rep), function(x) {
+    apply(combn(rep, x), 2, paste, collapse = ".")
+  }))
+  df$rep.age.total <- which(cumsum(rep.bp) > sum(rep.bp)/2)[1]
+  for (l in rep) {
+    sub <- rowSums(divsum[unlist(strsplit(l, "\\."))])
+    name <- paste0("rep.age.", tolower(l))
+    assign(name, which(cumsum(sub) > sum(sub)/2)[1])
+    df[[name]] <- get(name)
+  }
   repstats <- rbind(repstats, df)
 }
 
 # reorganize and save results
 dat <- merge(dat, repstats, by= "species", all = T)
-dat <- dat[, c(1:15, 20:31, 16:19)]
 dat <- dat[order(dat$size.Mb, decreasing = TRUE), ]
 dat <- dat[order(dat$species), ]
 dat <- dat[order(dat$thrs), ]
 write.csv(dat,
           "../results/parsed.csv", 
           row.names = FALSE)
+
+
 
 

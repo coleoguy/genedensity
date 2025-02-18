@@ -1,153 +1,91 @@
 
 
+library(MuMIn)
+library(phytools)
+library(caper)
 
-# for each repeat in each clade in each threshold, fit a glm model where the 
-# response is r2 and the predictors are (divergence containing 1/2 repeat sum), 
-# repeat proportion, and the interaction of these two terms. then, select
-# for the best model using step(). if the residuals of this model show 
-# phylogenetic signal, fit a PGLS model instead and select the best model using
-# AIC (step() doesn't work for PGLS objects)
+# identify repeats of interest
+terms <- c("dna", "line", "ltr", "sine", "others", "unknown")
 
-# helper functions
-# universal ordering of a table of 5 models
-sortModels <- function(x) {
-  first <- which(!is.na(x[, terms[-1]][1]) & 
-                   !is.na(x[, terms[-1]][2]) & 
-                   !is.na(x[, terms[-1]][3])) 
-  second <- which(!is.na(x[, terms[-1]][1]) & 
-                    !is.na(x[, terms[-1]][2]) & 
-                    is.na(x[, terms[-1]][3])) 
-  third <- which(is.na(x[, terms[-1]][1]) & 
-                   !is.na(x[, terms[-1]][2]) & 
-                   is.na(x[, terms[-1]][3])) 
-  fourth <- which(!is.na(x[, terms[-1]][1]) & 
-                    is.na(x[, terms[-1]][2]) & 
-                    is.na(x[, terms[-1]][3])) 
-  fifth <- which(is.na(x[, terms[-1]][1]) & 
-                   is.na(x[, terms[-1]][2]) & 
-                   is.na(x[, terms[-1]][3])) 
-  order <- c(first, second, third, fourth, fifth)
-  return(x[order, ])
+combs <- unlist(lapply(1:length(terms), function(x) {
+  apply(combn(terms, x), 2, paste, collapse = ".")
+}))
+dat <- read.csv("../results/parsed.csv")
+dat <- dat[!is.na(dat$chromnum.1n) & !duplicated(dat$species), ]
+dat <- na.omit(dat[, c("species", "clade", "rsq", "rep.prop.total", paste0("rep.prop.", terms), "rep.age.total", paste0("rep.age.", combs))])
+dat <- dat[dat$clade == "Mammalia", ]
+
+# prune tree
+tree <- read.tree("../data/formatted.tree.nwk")
+tree$tip.label <- gsub("_", " ", tree$tip.label)
+int <- intersect(dat$species, tree$tip.label)
+dat <- dat[dat$species %in% int, ]
+pruned.tree <- keep.tip(tree, int)
+
+# fit PGLS models
+pgls.models <- data.frame()
+for (i in combs) {
+  
+  # get repeat age and proportion
+  rep <- unlist(strsplit(i, "\\."))
+  prop <- as.numeric(rowSums(as.data.frame(dat[, c(paste0("rep.prop.", rep))])))
+  age <- dat[, c(paste0("rep.age.", i))]
+  
+  # create new dataframe to make cd object for PGLS; normalize data
+  sub <- dat[, c("species", "clade", "rsq")]
+  sub$age.norm <- (age - range(age)[1]) / diff(range(age))
+  sub$prop.norm <- (prop - range(prop)[1]) / diff(range(prop))
+  
+  # fit model
+  cd <- comparative.data(pruned.tree, sub, names.col = "species", vcv = TRUE)
+  model <- dredge(pgls(rsq ~ age.norm*prop.norm, data = cd), subset = dc(x1, x2, x1:x2))
+  pgls.models <- rbind(pgls.models, model)
 }
+# record model terms
+pgls.models$model <- rep(combs, each = 5)
 
-library(caper) # apply PGLS
-library(data.table) # quickly read data
-library(MuMIn) # calculate AIC
-library(piecewiseSEM) # calculate R2 for PGLS objects
-library(phytools) # phy stuff
-terms <- c(
-  "(Intercept)", 
-  "median.trans", 
-  "rep.prop", 
-  "median.trans:rep.prop"
-)
-dat <- fread("../results/parsed.csv")
-dat <- as.data.frame(dat)
-dat <- dat[!is.na(dat$chromnum.1n), ]
-dat <- dat[dat$thrs == 0.8, ]
+write.csv(as.data.frame(pgls.models), "../results/aic.csv", row.names = FALSE)
+pgls.models <- read.csv("../results/aic.csv")
 
-# store results a list to save memory
-lis <- list()
 
-# for each clade
-for (cl in c("Total", "Mammalia", "Actinopterygii", "Sauria")) {
-  # for each repeat type
-  for (rep in c("total", "line", "sine", "ltr", "dna", "rc")) {
-    head <- as.data.frame(t(setNames(c(cl, rep), c("cl", "rep"))))
-    # subset data for normalization
-    sub <- dat[!duplicated(dat$species), ]
-    sub <- na.omit(sub[, c("species", "rsq", "clade", paste0(rep, ".rep.median"), paste0(rep, ".rep.pct"))])
-    if (cl %in% c("Mammalia", "Actinopterygii", "Sauria")) {
-      sub <- sub[sub$clade == cl, ]
-    }
-    sub <- sub[sub$species != "Callithrix jacchus", ]
-    if (nrow(sub) <= 2) {
-      next
-    }
-    # transform and normalize
-    median <- 1 - (sub[[paste0(rep, ".rep.median")]]/70)
-    median.range <- range(na.omit(median))
-    sub$median.trans <- (median - median.range[1]) / diff(median.range)
-    vol <- sub[[paste0(rep, ".rep.pct")]] / 100
-    vol.range <- range(na.omit(vol))
-    sub$rep.prop <- (vol - vol.range[1]) / diff(vol.range)
-    sub <- na.omit(sub[, c("species", "rsq", "clade", "median.trans", "rep.prop")])
-    
-    # prune tree and dataset based on species intersection 
-    tree <- read.tree("../data/formatted.tree.nwk")
-    tree$tip.label <- gsub("_", " ", tree$tip.label)
-    int <- intersect(tree$tip.label, sub$species)
-    if (length(int) <= 2) {
-      next
-    }
-    pruned.tree <- keep.tip(tree, int)
-    sub <- sub[sub$species %in% int, ]
-    
-    # find all possible GLMs
-    formula <- reformulate(terms[-1], "rsq")
-    glm.models <- dredge(glm(formula, data = sub, na.action = na.fail), subset = dc(x1, x2, x1:x2))
-    glm.models <- sortModels(glm.models)
-    
-    # TEST
-    glm.models <- get.models(glm.models, subset = 1:nrow(glm.models))
-    glm.avg <- model.avg(glm.models)
-    res <- setNames((sub$rsq - predict(glm.avg, type = "response")), sub$species)
-    res.physig.p <- as.data.frame(t(setNames(phylosig(pruned.tree, res, method="lambda", test=TRUE)[[4]], "res.physig.p")))
-    if (res.physig.p < 0.05) {
-      cd <- comparative.data(pruned.tree, sub, names.col = "species", vcv = T)
-      pgls.models <- dredge(pgls(formula, data = cd), subset = dc(x1, x2, x1:x2))
-      pgls.models <- sortModels(pgls.models)
-      pgls.models <- get.models(pgls.models, subset = 1:nrow(pgls.models))
-      pgls.avg <- model.avg(pgls.models)
-      summary(pgls.avg)$coefmat.full
-      beta <- as.data.frame(t(summary(pgls.avg)$coefmat.full[, "Estimate"]))
-      names(beta) <- c("intercept.b", "age.b", "prop.b", "interact.b")
-      p <- as.data.frame(t(summary(pgls.avg)$coefmat.full[, "Pr(>|z|)"]))
-      names(p) <- c("intercept.p", "age.p", "prop.p", "interact.p")
-    } else {
-      summary(glm.avg)$coefmat.full
-      beta <- as.data.frame(t(summary(glm.avg)$coefmat.full[, "Estimate"]))
-      names(beta) <- c("intercept.b", "age.b", "prop.b", "interact.b")
-      p <- as.data.frame(t(summary(glm.avg)$coefmat.full[, "Pr(>|z|)"]))
-      names(p) <- c("intercept.p", "age.p", "prop.p", "interact.p")
-    }
-    lis <- list(lis, cbind(head, res.physig.p, beta, p))
-    
-    # for each GLM
-    for (i in 1:nrow(glm.models)) {
-      model <- get.models(glm.models, i)[[1]]
-      p <- as.data.frame(t(setNames(data.frame(summary(model)$coefficients)[terms, ]$Pr...t.., 
-                    c("intercept.p", "age.p", "rep.p", "interact.p"))))
-      res <- setNames(resid(model), sub$species)
-      res.physig.p <- as.data.frame(t(setNames(phylosig(pruned.tree, res, method="lambda", test=TRUE)[[4]], "res.physig.p")))
-      out <- cbind(head, as.data.frame(glm.models)[i, ], res.physig.p, p)
-      lis <- c(lis, list(out))
-    }
-    
-    # find all PGLS models
-    cd <- comparative.data(pruned.tree, sub, names.col = "species", vcv = T)
-    pgls.models <- dredge(pgls(formula, data = cd), subset = dc(x1, x2, x1:x2))
-    pgls.models <- sortModels(pgls.models)
-    
-    # for each PGLS 
-    for (i in 1:nrow(pgls.models)) {
-      model <- get.models(pgls.models, i)[[1]]
-      p <- as.data.frame(t(setNames(data.frame(summary(model)$coefficients)[terms, ]$Pr...t.., 
-                                    c("intercept.p", "age.p", "rep.p", "interact.p"))))
-      res.physig.p <- as.data.frame(t(setNames(NA, "res.physig.p")))
-      out <- cbind(head, as.data.frame(pgls.models)[i, ], res.physig.p, p)
-      lis <- c(lis, list(out))
-    }
-  }
+
+
+
+
+
+
+
+
+
+
+
+
+################ for GLS models without phylogenetic correction ################
+
+library(MuMIn)
+library(phytools)
+
+terms <- c("dna", "line", "ltr", "sine", "others", "unknown")
+combs <- unlist(lapply(1:length(terms), function(x) {
+  apply(combn(terms, x), 2, paste, collapse = ".")
+}))
+dat <- read.csv("../results/parsed.csv")
+dat <- dat[!is.na(dat$chromnum.1n) & !duplicated(dat$species), ]
+dat <- na.omit(dat[, c("species", "clade", "rsq", "rep.prop.total", paste0("rep.prop.", terms), "rep.age.total", paste0("rep.age.", combs))])
+dat <- dat[dat$clade == "Mammalia", ]
+
+# fit GLS models
+gls.models <- data.frame()
+for (i in combs) {
+  rep <- unlist(strsplit(i, "\\."))
+  prop <- as.numeric(rowSums(as.data.frame(dat[, c(paste0("rep.prop.", rep))])))
+  age <- dat[, c(paste0("rep.age.", i))]
+  age.norm <- (age - range(age)[1]) / diff(range(age))
+  prop.norm <- (prop - range(prop)[1]) / diff(range(prop))
+  model <- dredge(glm(dat$rsq ~ age.norm*prop.norm, na.action = na.fail), subset = dc(x1, x2, x1:x2))
+  gls.models <- rbind(gls.models, model)
 }
+gls.models$model <- rep(combs, each = 5)
 
-# convert list into dataframe
-df <- as.data.frame(do.call(rbind, lis))
 
-# write
-write.csv(df, file = "../results/AICs.csv", row.names = F)
 
-# show results
-df <- read.csv("../results/AICs.csv")
-df <- df[, c("cl", "rep", "median.trans", "rep.prop", "median.trans.rep.prop", "AICc", "delta", "res.physig.p")]
-df <- df[is.na(df$res.physig.p), ]
