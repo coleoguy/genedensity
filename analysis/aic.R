@@ -39,53 +39,14 @@ for (i in combs) {
   # fit model
   cd <- comparative.data(pruned.tree, sub, names.col = "species", vcv = TRUE)
   model <- dredge(pgls(rsq ~ age.norm*prop.norm, data = cd), subset = dc(x1, x2, x1:x2))
+  model <- subset(as.data.frame(model), select = -delta)
+  model$model <- i
   pgls.models <- rbind(pgls.models, model)
 }
-# record model terms
-pgls.models$model <- rep(combs, each = 5)
 
 write.csv(as.data.frame(pgls.models), "../results/mammal.aic.csv", row.names = FALSE)
 pgls.models <- read.csv("../results/mammal.aic.csv")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-################ for GLS models without phylogenetic correction ################
-
-library(MuMIn)
-library(phytools)
-
-terms <- c("dna", "line", "ltr", "sine", "others", "unknown")
-combs <- unlist(lapply(1:length(terms), function(x) {
-  apply(combn(terms, x), 2, paste, collapse = ".")
-}))
-dat <- read.csv("../results/parsed.csv")
-dat <- dat[!is.na(dat$chromnum.1n) & !duplicated(dat$species), ]
-dat <- na.omit(dat[, c("species", "clade", "rsq", "rep.prop.total", paste0("rep.prop.", terms), "rep.age.total", paste0("rep.age.", combs))])
-dat <- dat[dat$clade == "Mammalia", ]
-
-# fit GLS models
-gls.models <- data.frame()
-for (i in combs) {
-  rep <- unlist(strsplit(i, "\\."))
-  prop <- as.numeric(rowSums(as.data.frame(dat[, c(paste0("rep.prop.", rep))])))
-  age <- dat[, c(paste0("rep.age.", i))]
-  age.norm <- (age - range(age)[1]) / diff(range(age))
-  prop.norm <- (prop - range(prop)[1]) / diff(range(prop))
-  model <- dredge(glm(dat$rsq ~ age.norm*prop.norm, na.action = na.fail), subset = dc(x1, x2, x1:x2))
-  gls.models <- rbind(gls.models, model)
-}
-gls.models$model <- rep(combs, each = 5)
 
 
 
