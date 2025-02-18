@@ -44,8 +44,8 @@ for (i in combs) {
 # record model terms
 pgls.models$model <- rep(combs, each = 5)
 
-write.csv(as.data.frame(pgls.models), "../results/aic.csv", row.names = FALSE)
-pgls.models <- read.csv("../results/aic.csv")
+write.csv(as.data.frame(pgls.models), "../results/mammal.aic.csv", row.names = FALSE)
+pgls.models <- read.csv("../results/mammal.aic.csv")
 
 
 
