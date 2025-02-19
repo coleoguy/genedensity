@@ -41,7 +41,6 @@ for (i in 1:length(sp)) {
   
   # find repeat %
   df <- data.frame(species)
-  df$rep.prop.total <- sum(rep.bp) / asmbsz[sp[i]]
   for (k in rep) {
     name <- paste0("rep.prop.", tolower(k))
     assign(name, sum(divsum[k] /  asmbsz[sp[i]] * 100))
@@ -52,7 +51,6 @@ for (i in 1:length(sp)) {
   rep <- unlist(lapply(1:length(rep), function(x) {
     apply(combn(rep, x), 2, paste, collapse = ".")
   }))
-  df$rep.age.total <- which(cumsum(rep.bp) > sum(rep.bp)/2)[1]
   for (l in rep) {
     sub <- rowSums(divsum[unlist(strsplit(l, "\\."))])
     name <- paste0("rep.age.", tolower(l))
