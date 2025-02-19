@@ -1,5 +1,13 @@
 
 
+# all clades: variation decreases with age
+# mammals: ----
+# fish: variation decreases with age and increases with interaction
+# reptiles: variation decreases with age and decreases with proportion
+# mammals + fish: ----
+# mammals + reptiles: ----
+# fish + reptiles: interaction increases with age
+# mammals + fish + repties: variation decreases with age
 
 library(MuMIn)
 library(phytools)
@@ -15,7 +23,7 @@ dat <- na.omit(dat[, c("species",
                        "rsq", 
                        paste0("rep.prop.", terms), 
                        paste0("rep.age.", combs))])
-# dat <- dat[dat$clade == "Mammalia", ]
+# dat <- dat[dat$clade %in% c("Mammalia"), ]
 
 # prune tree
 tree <- read.tree("../data/formatted.tree.nwk")
@@ -70,10 +78,8 @@ dummy <- pgls.models[1,]
 pgls.models <- rbind(pgls.models, dummy)
 pgls.models <- pgls.models[-1,]
 
-summary(model.avg(pgls.models[1:9]))
-summary(model.avg(pgls.models))
-
 # write
-write.csv(as.data.frame(pgls.models), "../results/total.aic.csv", row.names = FALSE)
-pgls.models <- read.csv("../results/total.aic.csv")
+saveRDS(pgls.models, "../results/all.clades.rds")
+pgls.models <- readRDS("../results/all.clades.rds")
 
+confint(model.avg(pgls.models))
