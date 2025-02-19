@@ -1,6 +1,5 @@
 
 
-
 library(MuMIn)
 library(phytools)
 library(caper)
@@ -37,37 +36,15 @@ for (i in combs) {
   sub$age.norm <- (age - range(age)[1]) / diff(range(age))
   sub$prop.norm <- (prop - range(prop)[1]) / diff(range(prop))
   
-  # Create presence/absence vector
-  is.present <- as.numeric(terms %in% rep)
-  
-  # Create extra list with presence/absence for each term
-  extra.list <- eval(parse(text = paste0(
-    "alist(",
-    paste(terms, "= function(x) is.present[", seq_along(terms), "]", collapse = ", "),
-    ")"
-  )))
-  
+  cur.id <- match(i, combs)
   # fit model
   cd <- comparative.data(pruned.tree, sub, names.col = "species", vcv = TRUE)
-  model <- dredge(pgls(rsq ~ age.norm*prop.norm, data = cd), 
-                  subset = dc(x1, x2, x1:x2), 
-                  extra = extra.list)
-  
+  model <- dredge(pgls(rsq ~ age.norm*prop.norm, data = cd), subset = dc(x1, x2, x1:x2), extra = list(id = function(model) cur.id))
   pgls.models <- rbind(pgls.models, model)
 }
-for (term in terms) {
-  pgls.models[[term]] <- as.logical(unlist(pgls.models[[term]]))
-}
-
-pgls.models <- pgls.models[
-  apply(pgls.models[, terms], 1, function(x) all(x == TRUE)) |  # All columns are TRUE
-    (pgls.models[, terms[length(terms)-1]] == FALSE & pgls.models[, terms[length(terms)]] == FALSE),  # Last two columns are FALSE
-  , ]
-
-dummy_row <- pgls.models[1,]
-pgls.models <- rbind(pgls.models, dummy_row)
-pgls.models <- pgls.models[-1,]
+pgls.models$id <- combs[pgls.models$id]
 
 write.csv(as.data.frame(pgls.models), "../results/mammal.aic.csv", row.names = FALSE)
 pgls.models <- read.csv("../results/mammal.aic.csv")
+
 
