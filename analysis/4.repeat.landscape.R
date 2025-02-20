@@ -39,11 +39,11 @@ for (i in 1:length(sp)) {
   # set which repeats to record
   rep <- colnames(divsum)[!colnames(divsum) %in% c("Div")]
   
-  # find repeat %
+  # find repeat proportion
   df <- data.frame(species)
   for (k in rep) {
     name <- paste0("rep.prop.", tolower(k))
-    assign(name, sum(divsum[k] /  asmbsz[sp[i]] * 100))
+    assign(name, sum(divsum[k] /  asmbsz[sp[i]]))
     df[[name]] <- get(name)
   }
   
