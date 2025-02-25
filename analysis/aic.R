@@ -79,6 +79,21 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauria")) {
   # for each model do: shapiro-welk, breusch-pagen, pagel's lambda
   for (k in 1:nrow(pgls.models)) {
     
+    # determine repeats present in model
+    rep <- terms[which(pgls.models[k, terms] == 1)]
+    prop <- rowSums(dat[, paste0("rep.prop.", rep)])
+    age <- dat[, paste0("rep.age.", paste(terms[which(pgls.models[k, terms] == 1)], collapse = "."))]
+    
+    # normalize
+    sub <- dat[, c("species", "clade", "rsq")]
+    sub$age.norm <- (age - range(age)[1]) / diff(range(age))
+    sub$prop.norm <- (prop - range(prop)[1]) / diff(range(prop))
+    
+    # make models
+    gls.model <- glm(formula, data = sub)
+    cd <- comparative.data(pruned.tree, data = sub, names.col = "species", vcv = TRUE)
+    pgls.model <- pgls(formula, data = cd)
+    
     # define terms and formula
     all.terms <- c("age.norm", "prop.norm", "age.norm:prop.norm")
     model.terms <- as.data.frame(pgls.models)[k, all.terms]
@@ -87,24 +102,23 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauria")) {
     } else {
       model.terms <- all.terms[which(!is.na(model.terms))]
     }
+    formula <- reformulate(model.terms, response = "rsq")
     
     # lambda (phylogenetic signal)
-    formula <- reformulate(model.terms, response = "rsq")
-    gls.model <- glm(formula, data = cd$data)
-    gls.res <- resid(gls.model)
+    gls.res <- setNames(resid(gls.model), sub$species)
     pgls.models$lambda.p[k] <- phylosig(tree = pruned.tree, 
                                         x = gls.res, 
                                         method = "lambda", 
                                         test = TRUE, 
-                                        niter = 300)$P
+                                        niter = 1000)$P
+    phylosig(pruned.tree, gls.res)
     
     # shapiro-welk (residual normality)
-    pgls.model <- get.models(pgls.models, k)[[1]]
     pgls.res <- resid(pgls.model)
     pgls.models$sw.p[k] <- shapiro.test(pgls.res)$p.value
     
     # breusch-pagan (homoskedasticity)
-    if (all(is.na(model.terms))) {
+    if (length(model.terms) == 1 & all(model.terms == "1")) {
       pgls.models$bp.p[k] <- NA
     } else {
       pgls.models$bp.p[k] <- bptest(pgls.model)$p.value[[1]]
@@ -127,53 +141,28 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauria")) {
 
 
 
+library(MuMIn)
+
+# load results and filter for terms of interest
+dat <- readRDS("../results/all.8.rds")
+terms <- read.csv("../results/parsed.csv")
+terms <- gsub("rep.prop.", "", names(terms)[grep("^rep.prop", names(terms))])
+dat <- dat[c(which(rowSums(dat[, terms]) == length(terms)), 
+             which(rowSums(dat[, c("others", "unknown")]) == 0)), ]
+
+# filter for models that meet assumptions
+dat <- dat[which(dat$lambda.p < 0.05)]
+dat <- dat[which(dat$bp.p < 0.05)]
+dat <- dat[which(dat$sw.p < 0.05)]
+
+# recalculate
+dat <- rbind(dat, dat[1,])
+dat <- dat[-1,]
+
+# average
+avg <- model.avg(dat)
+summary(avg)
+confint(avg)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# snippets
-
-confint(model.avg(pgls.models))
-
-# remove models involving misc/unidentified repeats; re-calculate deltas
-pgls.models <- pgls.models[
-  apply(pgls.models[, terms], 1, function(x) all(x == TRUE)) |  # All columns are TRUE
-    (pgls.models[, terms[length(terms)-1]] == FALSE & pgls.models[, terms[length(terms)]] == FALSE),  # Last two columns are FALSE
-  , ]
-dummy <- pgls.models[1,]
-pgls.models <- rbind(pgls.models, dummy)
-pgls.models <- pgls.models[-1,]

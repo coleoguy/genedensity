@@ -15,20 +15,20 @@ library(phytools)
 options(na.action = "na.fail")
 terms <- c(
   "(Intercept)", 
-  "chromnum.1n", 
+  #"chromnum.1n", 
   "median.trans", 
   "rep.prop", 
-  "chromnum.1n:median.trans", 
-  "chromnum.1n:rep.prop", 
-  "median.trans:rep.prop", 
-  "chromnum.1n:median.trans:rep.prop"
+  #"chromnum.1n:median.trans", 
+  #"chromnum.1n:rep.prop", 
+  "median.trans:rep.prop"
+  #"chromnum.1n:median.trans:rep.prop"
 )
 lis <- list()
 dat <- read.csv("../results/parsed.csv")
-tree <- read.tree("../data/formatted_tree.nwk")
+tree <- read.tree("../data/formatted.tree.nwk")
 tree$tip.label <- gsub("_", " ", tree$tip.label)
 # for each threshold
-for (thrs in (0:100)*0.01) {
+for (thrs in (80)*0.01) {
   
   sub <- dat[dat$thrs == thrs, ]
   

@@ -19,7 +19,7 @@ ylab = "R-squared",
 data = dat,
 pwcol = cols,
 pch = 16,
-spacing = 1.4,
+spacing = 1.65,
 labels = NA)
 text(1, 0.05, "Mammals", xpd = NA, adj = c(0.5, 0.5))
 text(2, 0.05, "Ray-finned fish", xpd = NA, adj = c(0.5, 0.5))

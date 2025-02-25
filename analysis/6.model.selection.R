@@ -13,6 +13,7 @@ library(caper) # apply PGLS
 library(MuMIn) # calculate AIC
 library(piecewiseSEM) # calculate R2 for PGLS objects
 library(phytools) # phy stuff
+options(na.action = "na.fail")
 terms <- c(
   "(Intercept)", 
   "median.trans", 
@@ -26,17 +27,21 @@ dat <- dat[!is.na(dat$chromnum.1n), ]
 lis <- list()
 
 # for each threshold
-for (thrs in (0:100)*0.01) {
+for (thrs in c(0.9)) {
   # for each clade
   for (cl in c("Total", "Mammalia", "Actinopterygii", "Sauria")) {
-    classes <- c("total", "line", "sine", "ltr", "dna", "rc")
+    classes <- c("total", "line", "sine", "ltr", "dna")
     # for each repeat
     for (rep in classes) {
       
       # subset data
       sub <- dat[dat$thrs == thrs, ]
       sub <- sub[!duplicated(sub$species), ]
-      sub <- na.omit(sub[, c("species", "rsq", "clade", paste0(rep, ".rep.median"), paste0(rep, ".rep.pct"))])
+      if (rep == "total") {
+        sub <- na.omit(sub[, c("species", "rsq", "clade", "rep.age.dna.line.ltr.sine.others.unknown", "rep.prop.dna", "rep.prop.line", "rep.prop.ltr", "rep.prop.sine", "rep.prop.others", "rep.prop.unknown")])
+      } else {
+        sub <- na.omit(sub[, c("species", "rsq", "clade", paste0("rep.age.", rep), paste0("rep.prop.", rep))])
+      }
       if (cl %in% c("Mammalia", "Actinopterygii", "Sauria")) {
         sub <- sub[sub$clade == cl, ]
       }
@@ -46,12 +51,15 @@ for (thrs in (0:100)*0.01) {
       }
       
       # transform data
-      median <- 1 - (sub[[paste0(rep, ".rep.median")]]/70)
-      median.range <- range(na.omit(median))
-      sub$median.trans <- (median - median.range[1]) / diff(median.range)
-      vol <- sub[[paste0(rep, ".rep.pct")]] / 100
-      vol.range <- range(na.omit(vol))
-      sub$rep.prop <- (vol - vol.range[1]) / diff(vol.range)
+      if (rep == "total") {
+        age <- rowSums(as.data.frame(sub[, c("rep.prop.dna", "rep.prop.line", "rep.prop.ltr", "rep.prop.sine", "rep.prop.others", "rep.prop.unknown")]))
+        prop <- sub$rep.age.dna.line.ltr.sine.others.unknown
+      } else {
+        age <- as.vector(sub[, paste0("rep.age.", rep)])
+        prop <- as.vector(sub[, paste0("rep.prop.", rep)])
+      }
+      sub$median.trans <- (age - min(age)) / diff(range(age))
+      sub$rep.prop <- (prop - min(prop)) / diff(range(prop))
       sub <- na.omit(sub[, c("species", "rsq", "clade", "median.trans", "rep.prop")])
       
       # find intersection between tree tips and results 
@@ -65,9 +73,9 @@ for (thrs in (0:100)*0.01) {
       
       # initial model selection
       formula <- reformulate(terms[-1], "rsq")
-      model <- step(glm(formula, data = sub))
+      # model <- step(glm(formula, data = sub))
+      model <- get.models(dredge(glm(formula, data = sub), subset = dc(x1, x2, x1:x2)), 1)[[1]]
       effects <- data.frame(summary(model)$coefficients)[terms, ]
-      # model <- get.models(dredge(glm(formula, data = dat), subset = dc(x1, x2, x1:x2)), 1)[[1]]
       
       # if phylogenetic signals are present in model residuals, apply PGLS
       res <- setNames(resid(model), sub$species)
@@ -102,7 +110,7 @@ df[, num] <- lapply(df[, num], as.numeric)
 df[] <- lapply(df, function(x) if(is.list(x)) sapply(x, paste, collapse=",") else x)
 
 # write
-write.csv(df, file = "../results/models1.csv", row.names = F)
+write.csv(df, file = "../results/models2.csv", row.names = F)
 
 
 
