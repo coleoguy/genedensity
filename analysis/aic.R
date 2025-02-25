@@ -151,9 +151,9 @@ dat <- dat[c(which(rowSums(dat[, terms]) == length(terms)),
              which(rowSums(dat[, c("others", "unknown")]) == 0)), ]
 
 # filter for models that meet assumptions
-dat <- dat[which(dat$lambda.p < 0.05)]
-dat <- dat[which(dat$bp.p < 0.05)]
-dat <- dat[which(dat$sw.p < 0.05)]
+# dat <- dat[which(dat$lambda.p < 0.05)]
+# dat <- dat[which(dat$bp.p < 0.05)]
+# dat <- dat[which(dat$sw.p < 0.05)]
 
 # recalculate
 dat <- rbind(dat, dat[1,])
@@ -162,7 +162,77 @@ dat <- dat[-1,]
 # average
 avg <- model.avg(dat)
 summary(avg)
-confint(avg)
+confint(avg, full = TRUE) 
+
+
+
+
+
+
+
+df <- as.data.frame(confint(avg))
+df <- cbind(df, as.data.frame(coef(avg)))
+
+
+
+
+
+
+
+
+
+
+
+#################### code by gpt #######################
+
+
+# Load required library
+library(ggplot2)
+
+# Get confidence intervals for model-averaged estimates
+ci_df <- as.data.frame(confint(avg))  # avg is your model.avg object
+
+# Extract model-averaged coefficients
+coef_df <- as.data.frame(coef(avg))
+
+# Combine coefficients and confidence intervals
+plot_df <- data.frame(
+  Parameter = rownames(coef_df),
+  Estimate = coef_df[, 1],
+  Lower = ci_df[, 1],  # Lower bound of confidence interval
+  Upper = ci_df[, 2]   # Upper bound of confidence interval
+)
+
+# Make a forest plot
+ggplot(plot_df, aes(x = Parameter, y = Estimate)) +
+  geom_point(size = 3, color = "blue") +  # Plot coefficient estimates
+  geom_errorbar(aes(ymin = Lower, ymax = Upper), width = 0.2) +  # Confidence intervals
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +  # Reference line at 0
+  theme_minimal() +
+  coord_flip() +  # Flip the axes for better readability
+  labs(title = "Model-Averaged Coefficients with 95% Confidence Intervals",
+       x = "Parameter", y = "Estimate")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
