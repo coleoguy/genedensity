@@ -27,7 +27,7 @@ dat <- dat[!is.na(dat$chromnum.1n), ]
 lis <- list()
 
 # for each threshold
-for (thrs in c(0.9)) {
+for (thrs in c(0.8)) {
   # for each clade
   for (cl in c("Total", "Mammalia", "Actinopterygii", "Sauria")) {
     classes <- c("total", "line", "sine", "ltr", "dna")
@@ -110,7 +110,7 @@ df[, num] <- lapply(df[, num], as.numeric)
 df[] <- lapply(df, function(x) if(is.list(x)) sapply(x, paste, collapse=",") else x)
 
 # write
-write.csv(df, file = "../results/models2.csv", row.names = F)
+write.csv(df, file = "../results/models1.csv", row.names = F)
 
 
 
