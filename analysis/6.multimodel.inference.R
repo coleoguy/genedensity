@@ -21,7 +21,7 @@ lambda.test <- function(model) {
 }
 
 # loop for each clade
-for (i in c("All", "Mammalia", "Actinopterygii", "Sauria")) {
+for (i in c("All", "Mammalia", "Actinopterygii")) {
   
   # subset results
   tree <- read.tree("../data/formatted.tree.nwk")
@@ -55,16 +55,8 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauria")) {
     interactions
   )
   
-  # catch an error in reptile global model caused by severe collinearity
-  # drop the problematic term
-  global.model <- NULL
-  tryCatch({
-    global.model <<- pgls(reformulate(all.terms, response = "rsq"), data = cd)
-  }, error = function(e) {
-    message(paste0("dropping age.dna:prop.dna in ", i))
-    global.model <<- pgls(reformulate(setdiff(all.terms, c("age.dna:prop.dna")), 
-                                      response = "rsq"), data = cd)
-  })
+  # global model
+  global.model <<- pgls(reformulate(all.terms, response = "rsq"), data = cd)
   
   # set constraints
   model.terms <- unlist(strsplit(as.character(global.model$formula)[3], " \\+ "))
@@ -93,3 +85,28 @@ models <- models[1:length(which(cumsum(models$weight) <= 0.95))] # confidence se
 avg <- model.avg(models) # average
 confint(avg, full = F) # confidence interval
 sw(models) # importance
+
+
+
+
+
+
+
+
+
+
+
+################################ snippets
+
+# catch an error in reptile global model caused by severe collinearity
+# drop the problematic term
+global.model <- NULL
+tryCatch({
+  global.model <<- pgls(reformulate(all.terms, response = "rsq"), data = cd)
+}, error = function(e) {
+  message(paste0("dropping age.dna:prop.dna in ", i))
+  global.model <<- pgls(reformulate(setdiff(all.terms, c("age.dna:prop.dna")), 
+                                    response = "rsq"), data = cd)
+})
+
+
