@@ -6,17 +6,15 @@
 ## file contains species name and family
 
 results <- read.csv("../results/parsed.csv")
-results <- results[results$thrs == 0, ]
+results <- results[results$thrs == 0.8, ]
 results <- results[!duplicated(results$species), ]
+results <- results[!is.na(results$chromnum.1n), ]
 
 # drop species not in tree
 # library(ape)
 # tree <- read.tree("../data/formatted_tree.nwk")
 # sp <- intersect(results$species, gsub("_", " ", tree$tip.label))
 # results <- results[results$species %in% sp, ]
-
-# drop species without chromosome number
-results <- results[!is.na(results$chromnum.1n), ]
 
 # format species
 results <- results[, c("species", "family")]
