@@ -8,20 +8,20 @@ library(phytools) # load and prune tree
 library(caper) # PGLS
 options(na.action = "na.fail")  
 
-# functions
-sw.test <- function(model) {
-  res <- residuals(model)
-  sw.p <- shapiro.test(res)$p.value
-  return(sw.p)
-}
-lambda.test <- function(model) {
-  res <- setNames(residuals(model), dat$species)
-  lambda.p <- phylosig(tree, res, method = "lambda", test = TRUE, niter = 100)$P
-  return(lambda.p)
-}
+# # functions
+# sw.test <- function(model) {
+#   res <- residuals(model)
+#   sw.p <- shapiro.test(res)$p.value
+#   return(sw.p)
+# }
+# lambda.test <- function(model) {
+#   res <- setNames(residuals(model), dat$species)
+#   lambda.p <- phylosig(tree, res, method = "lambda", test = TRUE, niter = 100)$P
+#   return(lambda.p)
+# }
 
-rsq <- read.csv("../results/rsq.csv")
-repeats <- read.csv("../results/repeats.csv")
+rsq <- read.csv("../results/rsq.filtered.csv")
+repeats <- read.csv("../results/repeats.filtered.csv")
 
 combined.df <- data.frame()
 # loop for each clade

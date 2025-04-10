@@ -33,10 +33,12 @@ max.contig <- 60
 results <- as.data.frame(matrix(NA, 0, 3))
 colnames(results) <- c("species","rsq","assem.sz")
 # begin loop
-for (i in 1:length(all.species)){
+for (i in c(149:length(all.species))){ # TODO change range
   print(paste("Working on", all.species[i]))
-  fasta.path <- paste0("../data/genomes/", all.species[i], ".fa")
-  annot.path <- paste0("../data/genomes/", all.species[i], ".gtf")
+  # assume first file is fasta
+  fasta.path <- paste0("../data/genomes/",all.species[i], ".fa")
+  # assume second file is gff3/gtf/gbff
+  annot.path <- paste0("../data/genomes/",all.species[i], ".gtf")
   # read fasta
   fasta.data <- dataFromFasta(fasta.path = fasta.path, 
                               max.contig = max.contig,
@@ -44,9 +46,17 @@ for (i in 1:length(all.species)){
   fasta.data <- fasta.data[fasta.data$size.Mb >= 10, ]
   
   # skip to next species if we have less than three retained contigs
-  if(nrow(fasta.data) > 2){
+  if(nrow(fasta.data) < 3){
     if (verbose == TRUE) {
       print(noquote("   Aborted (less than 3 retained contigs)"))
+    }
+    next
+  }
+  
+  # skip to next species if sum of captured size < 0.8 of assembly size
+  if(unique(sum(fasta.data$size) < 0.8 * fasta.data$asmblysize.Mb)) {
+    if (verbose == TRUE) {
+      print(noquote("   Aborted (low assembly contiguity)"))
     }
     next
   }
@@ -57,11 +67,12 @@ for (i in 1:length(all.species)){
   asmblysize.Mb <- fasta.data$asmblysize.Mb[1]
   rm(fasta.data)
   gc()
+  
   # read gtf
   genecount <- dataFromGtf(annot.path, name, verbose)
   
   # skip to next species if gene count is unavailable for at least 3 contigs
-  if (sum(!is.na(genecount)) > 2) {
+  if (sum(!is.na(genecount)) < 3) {
     if (verbose == TRUE) {
       print(noquote("   Aborted (insufficient contigs with data)"))
     }
@@ -88,4 +99,4 @@ tax[tax$clade %in% "Reptilia", ]$clade <- "Sauria"
 tax[!(tax$clade %in% c("Actinopterygii", "Mammalia", "Sauria")), ]$clade <- "Others"
 results <- merge(results, tax, by = "species", all.x = T)
 
-write.csv(results, row.names=F, file = "../results/rsq.csv")
+write.csv(results, row.names=F, file = "../results/rsq.08.csv") # TODO change name

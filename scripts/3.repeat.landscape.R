@@ -1,5 +1,5 @@
 
-dat <- read.csv("../results/rsq.csv")
+dat <- read.csv("../results/rsq.08.csv")
 files <- list.files("../results/divsums")
 sp <- gsub(".divsum$", "", files)
 #asmbsz <- dat$assem.sz * 1000000
@@ -85,7 +85,7 @@ for (i in 1:length(sp)) {
   repstats <- rbind(repstats, df)
 }
 
-write.csv(repstats, "../results/repeat.results.csv", row.names = FALSE)
+write.csv(repstats, "../results/repeat.results.08.csv", row.names = FALSE)
 
 
 
