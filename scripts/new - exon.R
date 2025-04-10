@@ -28,9 +28,6 @@ write.csv(df, "../results/exons.csv", row.names = FALSE)
 
 
 
-
-
-
 library(data.table)
 library(parallel)
 all.species <- unique(gsub("\\..*$", "", list.files("../data/genomes")))
