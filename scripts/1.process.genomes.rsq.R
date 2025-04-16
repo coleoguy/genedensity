@@ -26,14 +26,13 @@ genome.files <- genome.files[genome.files != "readme.txt"]
 
 # pull species names from list of genome files
 all.species <- unique(gsub("\\..*$", "", genome.files))
-
 max.contig <- 60
 
 # make a results object
 results <- as.data.frame(matrix(NA, 0, 3))
 colnames(results) <- c("species","rsq","assem.sz")
 # begin loop
-for (i in c(149:length(all.species))){ # TODO change range
+for (i in c(1:length(all.species))){ # TODO change range
   print(paste("Working on", all.species[i]))
   # assume first file is fasta
   fasta.path <- paste0("../data/genomes/",all.species[i], ".fa")

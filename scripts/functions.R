@@ -42,10 +42,23 @@ dataFromGtf <- function(annot.path, name, verbose) {
   return(genecount)
 }
 
+# Shapiro-Wilk test
+sw.test <- function(model) {
+  res <- residuals(model)
+  sw.p <- shapiro.test(res)$p.value
+  return(sw.p)
+}
 
-permTest <- function(x, y, reps, method) {
-  permuted.y <- replicate(reps, sample(y))
-  permuted.cor <- apply(permuted.y, MARGIN = 2, function(col) cor(x, col, method = method))
-  pval <- mean(abs(permuted.cor) >= abs(cor(x, y, method = method)))
-  return(pval)
+# Pagel's lambda
+lambda.test <- function(model) {
+  res <- setNames(residuals(model), dat$species)
+  lambda.p <- phylosig(tree, res, method = "lambda", test = TRUE, niter = 100)$P
+  return(lambda.p)
+}
+
+# how many exons in a gene
+library(data.table)
+howmany <- function(genes, exons) {
+  nrow(exons[exons$V4 >= as.numeric(genes[4]) 
+             & exons$V5 <= as.numeric(genes[5]), ])
 }
