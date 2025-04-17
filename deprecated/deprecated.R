@@ -48,3 +48,12 @@ if (!(species %in% result.species)) {
   dat <- dat[order(dat$species), ]
   dat <- dat[order(dat$thrs), ]
   
+  
+  
+  permTest <- function(x, y, reps, method) {
+    permuted.y <- replicate(reps, sample(y))
+    permuted.cor <- apply(permuted.y, MARGIN = 2, function(col) cor(x, col, method = method))
+    pval <- mean(abs(permuted.cor) >= abs(cor(x, y, method = method)))
+    return(pval)
+  }
+  

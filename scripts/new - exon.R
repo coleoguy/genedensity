@@ -31,14 +31,21 @@ for (i in 1:length(all.species)) {
 write.csv(df, "exon.num.csv", row.names = F)
 
 
+
+
+
+
+
+
+
 # for each species, find the exon number at the 80% quantile
 
 # read in repeats.csv and removes species where the exon number at the 80% 
 # quantile is greater than 1000; for reference, this number for the human t2t 
 # annotation is 404 and the drosophila reference genome annotation is 50
-a <- read.csv("../results/rsq.csv")
-b <- read.csv("../results/repeats.csv")
-int <- intersect(a$species, b$species)
+# a <- read.csv("../results/rsq.csv")
+# b <- read.csv("../results/repeats.csv")
+# int <- intersect(a$species, b$species)
 df <- read.csv("../results/exon.num.csv")
 all.sp <- unique(df$sp)
 result <- c()
@@ -49,28 +56,23 @@ for (i in 1:length(all.sp)) {
   result <- c(result, setNames(metric, sp))
 }
 result <- result[result <= 1000]
-int <- intersect(int, names(result))
-write.csv(b[b$species %in% int, ], "../results/repeats.csv")
+# int <- intersect(int, names(result))
+# write.csv(b[b$species %in% int, ], "../results/repeats.csv")
 
-library(phytools)
-library(caper)
-tree <- read.tree("../data/formatted.tree.nwk")
-int2 <- intersect(tree$tip.label, int)
-pruned.tree <- keep.tip(tree, int2)
 
-y <- a[a$species %in% int2, ]$rsq
-x <- result[names(result) %in% int2]
-x <- x[order(names(x))]
-res <- setNames(resid(glm(y ~ x)), sort(int2))
+# overall gene density (total # of genes / assembly size) vs assembly size
+# larger genomes are less gene dense; exceptions with tetraploids and 
+# well-annotated species
+rsq <- read.csv("../results/rsq.csv")
+num.gene <- c()
+for (j in unique(df$sp)) {
+  num.gene <- c(num.gene, setNames(nrow(df[df$sp == j, ]), j))
+}
+int <- intersect(rsq$species, names(num.gene))
+rsq <- rsq[rsq$species %in% int, ]
+num.gene <- num.gene[names(num.gene) %in% int]
+genedens <- num.gene / rsq$assem.sz
+plot(rsq$assem.sz, genedens)
 
-l <- phylosig(pruned.tree, res, method = "lambda", niter = 10000, test = T)
 
-dat <- data.frame(sp = names(x), 
-                  rsq = y, 
-                  metric = x)
-cd <- comparative.data(pruned.tree, 
-                       dat, 
-                       names.col = "sp", 
-                       vcv = T)
-model <- pgls(rsq ~ metric, data = cd)
-summary(model)
+
