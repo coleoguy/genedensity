@@ -98,4 +98,4 @@ tax[tax$clade %in% "Reptilia", ]$clade <- "Sauria"
 tax[!(tax$clade %in% c("Actinopterygii", "Mammalia", "Sauria")), ]$clade <- "Others"
 results <- merge(results, tax, by = "species", all.x = T)
 
-write.csv(results, row.names=F, file = "../results/rsq.08.csv") # TODO change name
+write.csv(results, row.names=F, file = "../results/rsq.csv") # TODO change name
