@@ -3,13 +3,13 @@
 # r2 beeswarm
 library(beeswarm)
 dat <- read.csv("../results/rsq.csv")
-dat <- dat[dat$clade %in% c("Mammalia", "Sauria", "Actinopterygii"), ]
-dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauria"))
-map <- c("Mammalia" = "#d95f02", "Actinopterygii" = "#7570b3", "Sauria" = "#1b9e77")
+dat <- dat[dat$clade %in% c("Mammalia", "Sauropsida", "Actinopterygii"), ]
+dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauropsida"))
+map <- c("Mammalia" = "#d95f02", "Actinopterygii" = "#7570b3", "Sauropsida" = "#1b9e77")
 cols <- map[dat$clade]
 nmam <- nrow(dat[dat$clade == "Mammalia", ])
 nfish <- nrow(dat[dat$clade == "Actinopterygii", ])
-nrep <- nrow(dat[dat$clade == "Sauria", ])
+nrep <- nrow(dat[dat$clade == "Sauropsida", ])
 beeswarm(rsq ~ clade,
 xlab = NA,
 ylab = "R-squared",

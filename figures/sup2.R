@@ -31,10 +31,10 @@ for (i in dat$species) {
   largest <- c(largest, names(tail(divsum, 1)))
 }
 dat$largest <- largest
-dat <- dat[dat$clade %in% c("Mammalia", "Actinopterygii", "Sauria"), ]
-dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauria"))
+dat <- dat[dat$clade %in% c("Mammalia", "Actinopterygii", "Sauropsida"), ]
+dat$clade <- factor(dat$clade, levels = c("Mammalia", "Actinopterygii", "Sauropsida"))
 dat$largest[dat$largest %in% c("DNA.TcMar.Tc1", "LINE.L2", "SINE.tRNA.Core")] <- "Others"
-map <- c("Mammalia" = "#d95f02", "Actinopterygii" = "#7570b3", "Sauria" = "#1b9e77")
+map <- c("Mammalia" = "#d95f02", "Actinopterygii" = "#7570b3", "Sauropsida" = "#1b9e77")
 cols <- map[dat$clade]
 par(mar = c(5, 4, 4, 7)+0.1)
 beeswarm(rsq ~ largest, 

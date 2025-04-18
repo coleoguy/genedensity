@@ -12,11 +12,11 @@ repeats <- read.csv("../results/repeats.csv")
 
 combined.df <- data.frame()
 # loop for each clade
-for (i in c("All", "Mammalia", "Actinopterygii", "Sauria")) {
+for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
   
   # subset results
   dat <- merge(rsq, repeats, by.x = "species", by.y = "species", all.x = T, all.y = T)
-  if (i %in% c("Mammalia", "Actinopterygii", "Sauria")) {
+  if (i %in% c("Mammalia", "Actinopterygii", "Sauropsida")) {
     dat <- dat[dat$clade %in% i, ]
   }
   variables <- colnames(dat)[grep("^(prop|age)\\.", colnames(dat))]

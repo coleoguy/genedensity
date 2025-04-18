@@ -93,9 +93,10 @@ for (i in c(1:length(all.species))){ # TODO change range
 
 tax <- read.csv("../data/taxonomy.csv")
 tax$clade <- tax$class
-tax[tax$clade %in% "Aves", ]$clade <- "Sauria"
-tax[tax$clade %in% "Reptilia", ]$clade <- "Sauria"
-tax[!(tax$clade %in% c("Actinopterygii", "Mammalia", "Sauria")), ]$clade <- "Others"
+tax[tax$clade %in% "Aves", ]$clade <- "Sauropsida"
+tax[tax$clade %in% "Reptilia", ]$clade <- "Sauropsida"
+tax[!(tax$clade %in% c("Actinopterygii", "Mammalia", "Sauropsida")), ]$clade <- "Others"
 results <- merge(results, tax, by = "species", all.x = T)
 
-write.csv(results, row.names=F, file = "../results/rsq.csv") # TODO change name
+write.csv(a, row.names=F, file = "../results/rsq.csv") 
+
