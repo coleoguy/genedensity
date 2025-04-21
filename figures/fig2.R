@@ -18,12 +18,12 @@ pwcol = cols,
 pch = 16,
 spacing = 1.2,
 labels = NA)
-text(1, -0.13, "Mammals", xpd = NA, adj = c(0.5, 0.5))
-text(2, -0.13, "Ray-finned fish", xpd = NA, adj = c(0.5, 0.5))
-text(3, -0.13, "Reptiles", xpd = NA, adj = c(0.5, 0.5))
-text(1, -0.25, paste0("n=", nmam), xpd = NA, adj = c(0.5, 0.5))
-text(2, -0.25, paste0("n=", nfish), xpd = NA, adj = c(0.5, 0.5))
-text(3, -0.25, paste0("n=", nrep), xpd = NA, adj = c(0.5, 0.5))
+text(1, 0.06, "Mammals", xpd = NA, adj = c(0.5, 0.5))
+text(2, 0.06, "Ray-finned fish", xpd = NA, adj = c(0.5, 0.5))
+text(3, 0.06, "Reptiles", xpd = NA, adj = c(0.5, 0.5))
+text(1, -0.02, paste0("n=", nmam), xpd = NA, adj = c(0.5, 0.5))
+text(2, -0.02, paste0("n=", nfish), xpd = NA, adj = c(0.5, 0.5))
+text(3, -0.02, paste0("n=", nrep), xpd = NA, adj = c(0.5, 0.5))
 
 
 # phylogenetic anova
