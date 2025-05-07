@@ -8,7 +8,7 @@ options(na.action = "na.fail")
 source("functions.R")
 
 rsq <- read.csv("../results/rsq.csv")
-repeats <- read.csv("../results/repeats.csv")
+repeats <- read.csv("../results/repeat.results.csv")
 
 combined.df <- data.frame()
 # loop for each clade
@@ -52,9 +52,10 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
   } else {
     # dredge
     models <- dredge(global.model
-                     #extra = list(shapirowilk.p = sw.test, lambda.p = lambda.test)
+                     # extra = list(shapirowilk.p = sw.test, lambda.p = lambda.test)
     )
   }
+  
   models <- models[order(models$AICc), ]
   models <- models[cumsum(models$weight) <= 0.95, ]
   imp <- sort(sw(models), decreasing = TRUE)

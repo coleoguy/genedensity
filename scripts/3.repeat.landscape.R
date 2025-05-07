@@ -2,8 +2,6 @@
 dat <- read.csv("../results/rsq.csv")
 files <- list.files("../results/divsums")
 sp <- gsub(".divsum$", "", files)
-#asmbsz <- dat$assem.sz * 1000000
-#names(asmbsz) <- dat$species
 repstats <- data.frame()
 
 lis <- vector("list", length(sp))
@@ -33,6 +31,10 @@ others <- others[!others %in% "Div"]
 for (i in 1:length(sp)) {
   species <- sp[i]
   asmbsz <- dat[dat$species == species, ]$assem.sz * 1000000
+  if (length(asmbsz) == 0L) {
+    asmbsz <- NA
+  }
+  
   # read text file into lines
   divsum <- readLines(paste0("../results/divsums/", files[i]))
   # look for the start of relevant information
@@ -76,7 +78,7 @@ for (i in 1:length(sp)) {
   
   df <- data.frame(species)
   for (l in colnames(divsum)[-1]) {
-    # proportion TODO change to new way of getting asmbsz
+    # proportion
     df[[paste0("prop.", tolower(l))]] <- sum(divsum[l] / asmbsz)
 
     # age

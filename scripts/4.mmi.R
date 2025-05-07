@@ -8,7 +8,7 @@ options(na.action = "na.fail")
 source("functions.R")
 
 rsq <- read.csv("../results/rsq.csv")
-repeats <- read.csv("../results/repeats.csv")
+repeats <- read.csv("../results/repeat.results.csv")
 
 combined.df <- data.frame()
 # loop for each clade
