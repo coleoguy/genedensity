@@ -47,8 +47,9 @@ layout(matrix(1:2, ncol = 2), widths = c(4, 1)) # make 2 plots
 
 # main plot
 par(mar = c(8, 4, 1, 0))
-int.range <- range(as.matrix(combined.df[c("lower", "upper")])) * 1.1
-plot(y = combined.df$estimate, x = x, type = "n", ylim = 1.05 * int.range, 
+int.range <- range(as.matrix(combined.df[c("lower", "upper")])) * 1.2
+int.range[2] <- int.range[2] * 1.2
+plot(y = combined.df$estimate, x = x, type = "n", ylim = int.range, 
      ylab = "β coefficient", xlab = NA, axes = FALSE,
      xlim = c(min(x)-0.25, max(x)+0.25), useRaster = T) # plot
 abline(h = 0, lty = 1, col = "black") # line at y = 0
@@ -58,7 +59,7 @@ for (l in -100:100) {
 segments(x, combined.df$lower, x, combined.df$upper, lwd = 2) # confidence bars
 segments(x-0.1, combined.df$upper, x+0.1, combined.df$upper, lwd = 2)
 segments(x-0.1, combined.df$lower, x+0.1, combined.df$lower, lwd = 2)
-points(x, combined.df$estimate, pch = 16, cex = 1.2, col = cols) # colored points
+points(x, combined.df$estimate, pch = 16, cex = 0.9, col = cols) # colored points
 axis(2) # y axis
 axis(2, at = seq(-10, 10, by = 0.5), labels = FALSE, tcl = -0.2)
 axis(2, at = seq(-10, 10, by = 1), labels = FALSE, tcl = -0.5)
