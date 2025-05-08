@@ -1,0 +1,131 @@
+
+
+
+library(viridis)
+
+combined.df <- read.csv("../results/model.averaging.csv")
+
+# y positions
+y <- c()
+for (i in 1:length(combined.df$clade)) {
+  if (is.null(y)) {
+    y <- c(1)
+  } else {
+    y <- c(y, ifelse(combined.df$clade[i] == prev, tail(y, 1) + 1, tail(y, 1) + 2))
+  }
+  prev <- combined.df$clade[i]
+}
+y <- max(y)-y
+imp <- combined.df$importance
+
+# color mapping
+res <- 10000 # resolution
+palette <- viridis(res, begin = 0, end = 0.8, option = "A") # palette
+cols <- palette[round(((imp - min(imp)) / diff(range(imp))) * (res-1)) + 1] # colors
+
+# y labels
+labels <- c()
+for (i in combined.df$model) {
+  rep <- toupper(regmatches(i, regexpr("(?<=\\.)[a-zA-Z]+", i, perl = TRUE)))
+  if (rep == "OTHERS") {
+    rep <- "Others"
+  } else if (rep == "UNKNOWN") {
+    rep <- "Unknown"
+  }
+  
+  if (grepl(":", i)) {
+    type <- "age x prop."
+  } else if (sub("\\..*", "", i) == "prop") {
+    type <- "proportion"
+  } else {
+    type <- "age"
+  }
+  labels <- c(labels, paste(rep, type))
+}
+
+par(oma = c(0, 0, 3, 0))
+layout(matrix(1:2, ncol = 2), widths = c(4, 1)) # make 2 plots
+
+# main plot
+par(mar = c(6, 8, 1, 0))
+x.range <- range(as.matrix(combined.df[c("lower", "upper")])) + c(-0.4, 0.9)
+plot(x = combined.df$estimate, y = y, type = "n", xlim = x.range, 
+     xlab = "β coefficient", ylab = NA, axes = FALSE,
+     ylim = range(y) + c(-0.7, 0.7), useRaster = T) # plot
+abline(v = 0, lty = 1, col = "black") # line at y = 0
+for (l in -100:100) {
+  abline(v = l, lty = 2, col = "grey") # line at y = 0
+}
+segments(combined.df$lower, y, combined.df$upper, y, lwd = 2) # confidence bars
+segments(combined.df$upper, y-0.1, combined.df$upper, y+0.1, lwd = 2)
+segments(combined.df$lower, y-0.1, combined.df$lower, y+0.1, lwd = 2)
+points(combined.df$estimate, y, pch = 16, cex = 0.9, col = cols) # colored points
+axis(1) # x axis
+axis(1, at = seq(-10, 10, by = 0.5), labels = FALSE, tcl = -0.2)
+axis(1, at = seq(-10, 10, by = 1), labels = FALSE, tcl = -0.5)
+axis(2, at = y, labels = labels, las = 2) # y axis
+box()
+
+# color bar
+par(mar = c(6, 1, 1, 4))
+height <- seq(min(imp), max(imp), length.out = res + 1) # y values
+z <- matrix(seq(min(imp), max(imp), length.out = res), nrow = 1, ncol = res) # color gradient
+image(x = c(0, 1), y = height, z = z, col = palette, 
+      axes = FALSE, xlab = "", ylab = "", useRaster = T) # make color bar
+ticks <- seq(min(imp), max(imp), length.out = 5) # ticks
+axis(4, at = ticks, labels = round(ticks, 2), las = 1) # y axis
+
+# title
+# mtext("Parameter estimates for averaged models", 
+#       outer = TRUE, cex = 1.1, line = 0, font = 2, family = "sans", 
+#       adj = 0.35)
+par(mar = c(5, 4, 4, 2) + 0.1) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
