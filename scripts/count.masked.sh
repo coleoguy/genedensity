@@ -1,28 +1,19 @@
 #!/usr/bin/env bash
 
 out="summary.csv"
-echo "file,lowercase,N,assembly_size" > "$out"
-for f in *.fna; do
-  [ -e "$f" ] || continue
+echo "file,lower,N,assem_sz" > "$out"
 
-  # In one awk pass:
-  #  - lc   = total lowercase letters
-  #  - N    = total “N” characters
-  #  - size = sum of lengths of all sequence lines
+while IFS= read -r -d '' f; do
+  # count lowercase, N/n, and full line-length in one awk pass
   counts=$(awk '
-    /^>/ { next }
     {
-      lc   += gsub(/[a-z]/, "")
-      N    += gsub(/N/, "")
-      size += length($0)
+      size  += length($0)            # count full line first
+      lc    += gsub(/[a-z]/, "", $0) # count & remove lowercase
+      Nn    += gsub(/[Nn]/, "", $0)  # count & remove N/n
     }
-    END { print lc "," N "," size }
+    END { print lc "," Nn "," size }
   ' "$f")
-
-  # add filename
   echo "$f,$counts" >> "$out"
-done
+done < <(find . -type f -name "*.fna" -print0)
 
->&2 echo "done" 
-
-
+>&2 echo "done"
