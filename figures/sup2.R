@@ -4,14 +4,13 @@
 library(data.table)
 library(beeswarm)
 library(viridis)
-dat <- read.csv("../results/parsed.csv")
-dat <- dat[dat$thrs == 0.8, ]
+dat <- read.csv("../results/rsq.csv")
 dat <- dat[!duplicated(dat$species), ]
-dat <- dat[!is.na(dat$chromnum.1n), ]
+# dat <- dat[!is.na(dat$chromnum.1n), ]
 dat <- na.omit(dat[, c("species", "clade", "rsq")])
 
 files <- list.files("../results/divsums")
-masked.sp <- gsub("_", " ", gsub(".divsum$", "", files))
+masked.sp <- gsub(".divsum$", "", files)
 
 int <- intersect(masked.sp, dat$species)
 dat <- dat[dat$species %in% int, ]

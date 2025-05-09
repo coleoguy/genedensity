@@ -1,18 +1,26 @@
 
-dat <- read.csv("../results/maskedsz.csv", 
-                colClasses = c("date" = "character"))
-dat$lower <- dat$lower / 1000000
-dat$N <- dat$lower / 1000000
-dat$assembly_size <- dat$assembly_size / 1000000
-dat$date <- as.Date(dat$date, format = "%m%d%Y")
 
-op <- par(ask = TRUE)
-for (i in unique(dat$sp)) {
-  sub <- dat[dat$sp == i, ]
-  plot(sub$date, sub$lower, main = i, xlab = "date", ylab = "size (Mb)")
-  if (nrow(sub) > 2) {
-    fit <- glm(sub$lower ~ sub$date)
-    abline(fit$coefficients[1], fit$coefficients[2])
-  }
+dat <- read.delim("../data/ncbi_dataset.tsv")
+results <- read.csv("../results/summary.csv")
+results$accession <- gsub("(^\\./|/.*$)", "", results$file)
+results$assembly <- sub("^(?:[^_]*_){3}", "", results$file, perl = TRUE)
+results$assembly <- sub("_genomic\\.fna$", "", results$assembly)
+results <- results[, c("accession", "assembly", "lower", "N", "assem.sz")]
+foo <- merge(results, dat, by.x = "accession", by.y = "Assembly.Accession")
+foo$Assembly.Release.Date <- as.Date(foo$Assembly.Release.Date, format = "%Y-%m-%d")
+foo$Organism.Name <- sub("^(([^ ]+ [^ ]+)).*$", "\\1", foo$Organism.Name)
+foo <- foo[order(foo$Assembly.Release.Date, decreasing = TRUE), ]
+foo <- foo[order(foo$Organism.Name), ]
+
+for (i in 1:length(unique(foo$Organism.Name))) {
+  sub <- foo[foo$Organism.Name == unique(foo$Organism.Name)[i], ]
+  y <- sub$lower / sub$assem.sz
+  plot(sub$Assembly.Release.Date, y, 
+       xlab = "date", ylab = "masked/total", 
+       main = unique(sub$Organism.Name))
+  fit <- glm(y ~ sub$Assembly.Release.Date)
+  abline(fit$coefficients)
+  print(summary(fit))
+  readline(prompt = "Press [Enter] to continue...")
 }
-par(op)
+
