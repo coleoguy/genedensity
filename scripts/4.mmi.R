@@ -9,6 +9,7 @@ source("functions.R")
 
 rsq <- read.csv("../results/rsq.csv")
 repeats <- read.csv("../results/repeat.results.csv")
+tree <- read.tree("../data/formatted.tree.nwk")
 
 combined.df <- data.frame()
 # loop for each clade
@@ -22,15 +23,10 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
   variables <- colnames(dat)[grep("^(prop|age)\\.", colnames(dat))]
   dat <- na.omit(dat[, c("species", "clade", "rsq", variables)])
   
-  # prune tree
-  # tree <- read.tree("../data/formatted.tree.nwk")
-  # int <- intersect(dat$species, tree$tip.label)
-  
   # rescale
   for (j in variables) {
     dat[[j]] <- (dat[[j]]-min(dat[[j]])) / diff(range(dat[[j]]))
   }
-  # cd <- comparative.data(pruned.tree, dat, names.col = "species", vcv = TRUE)
   
   # set up interactions
   rep <- unique(sub("^[^.]*\\.", "", variables))
@@ -40,8 +36,12 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
     interactions
   )
   
-  # global model
+  # gls
   global.model <- glm(reformulate(all.terms, response = "rsq"), data = dat)
+  
+  # pgls
+  # cd <- comparative.data(tree, dat, names.col = "species", vcv = TRUE)
+  # global.model <- pgls(reformulate(all.terms, response = "rsq"), data = cd)
   
   # set constraints
   model.terms <- unlist(strsplit(as.character(global.model$formula)[3], " \\+ "))
@@ -54,8 +54,10 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
   subset.expr <- parse(text = paste(constraints, collapse = " & "))[[1]]
   
   # dredge
+  num <- ifelse(nrow(dat) > 21, 16, 15) # get rid of error in reptiles
   models <- dredge(global.model, 
-                   subset = subset.expr
+                   subset = subset.expr, 
+                   m.lim = c(0, num)
                    # extra = list(shapirowilk.p = sw.test, lambda.p = lambda.test)
   )
   models <- models[order(models$AICc), ]
@@ -63,7 +65,7 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
   imp <- sort(sw(models), decreasing = TRUE)
   avg <- model.avg(models)
   ci <- confint(avg)
-  ci <- ci[match(names(imp), row.names(ci)), ] #match ci
+  ci <- ci[match(names(imp), row.names(ci)), ] # match ci
   ci <- as.data.frame(ci)
   
   idx <- which(sign(ci[, 1]) == sign(ci[, 2])) # idx where 0 is not in ci
