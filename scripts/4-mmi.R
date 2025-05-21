@@ -8,8 +8,8 @@ options(na.action = "na.fail")
 source("functions.R")
 
 rsq <- read.csv("../results/rsq.csv")
-repeats <- read.csv("../results/repeat.results.csv")
-tree <- read.tree("../data/formatted.tree.nwk")
+repeats <- read.csv("../results/repeat-results.csv")
+tree <- read.tree("../data/formatted-tree.nwk")
 
 combined.df <- data.frame()
 # loop for each clade
@@ -62,6 +62,7 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
   )
   models <- models[order(models$AICc), ]
   models <- models[cumsum(models$weight) <= 0.95, ]
+  num <- nrow(models)
   imp <- sort(sw(models), decreasing = TRUE)
   avg <- model.avg(models)
   ci <- confint(avg)
@@ -76,11 +77,12 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
   }
   df <- data.frame(i, 
                    names(imp), 
+                   num, 
                    sapply(1:nrow(ci), function(x) mean(unlist(ci[x, ]))), 
                    imp, 
                    ci[, 1], 
                    ci[, 2])
-  colnames(df) <- c("clade", "model", "estimate", "importance", "lower", "upper")
+  colnames(df) <- c("clade", "model", "num.models", "estimate", "importance", "lower", "upper")
   
   if (nrow(combined.df) == 0) {
     combined.df <- df
@@ -89,6 +91,6 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
   }
 }
 combined.df <- combined.df[combined.df$importance > 0.5, ]
-write.csv(combined.df, "../results/model.averaging.csv", row.names = F)
+write.csv(combined.df, "../results/model-averaging.csv", row.names = F)
 
 

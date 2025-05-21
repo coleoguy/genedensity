@@ -7,7 +7,7 @@ dat <- read.csv("../results/parsed.csv")
 dat <- dat[dat$thrs == 0.8, ]
 dat <- dat[!duplicated(dat$species), ]
 dat <- dat[, c("species", "clade", "rsq")]
-tree <- read.tree("../data/formatted.tree.nwk")
+tree <- read.tree("../data/formatted-tree.nwk")
 tree$tip.label <- gsub("_", " ", tree$tip.label)
 int <- intersect(tree$tip.label, dat$species)
 pruned.tree <- keep.tip(tree, int)

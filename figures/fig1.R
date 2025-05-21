@@ -5,7 +5,7 @@ source("../scripts/functions.R")
 
 verbose <- T
 
-chrom <- read.csv("../data/chrom.and.gsz.csv")
+chrom <- read.csv("../data/chrom-and-gsz.csv")
 
 # rsq scatter
 

@@ -28,7 +28,7 @@ text(3, -0.02, paste0("n=", nrep), xpd = NA, adj = c(0.5, 0.5))
 
 # phylogenetic anova
 library(phytools)
-tree <- read.tree("../data/formatted.tree.nwk")
+tree <- read.tree("../data/formatted-tree.nwk")
 int <- intersect(dat$species, tree$tip.label)
 pruned.tree <- keep.tip(tree, int)
 sig <- phylosig(pruned.tree,

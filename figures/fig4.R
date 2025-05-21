@@ -1,20 +1,24 @@
 
 
-
 library(viridis)
 
-combined.df <- read.csv("../results/model.averaging.csv")
+combined.df <- read.csv("../results/model-averaging.csv")
 
-# x positions
-x <- c()
+# y positions
+y <- c()
+line <- c()
 for (i in 1:length(combined.df$clade)) {
-  if (is.null(x)) {
-    x <- c(1)
+  if (is.null(y)) {
+    y <- c(1)
+  } else if (combined.df$clade[i] == prev) {
+    y <- c(y, tail(y, 1) + 1)
   } else {
-    x <- c(x, ifelse(combined.df$clade[i] == prev, tail(x, 1) + 0.55, tail(x, 1) + 1))
+    y <- c(y, tail(y, 1) + 2)
+    line <- c(line, tail(y, 1) - 1)
   }
   prev <- combined.df$clade[i]
 }
+y <- max(y)-y 
 imp <- combined.df$importance
 
 # color mapping
@@ -22,72 +26,124 @@ res <- 10000 # resolution
 palette <- viridis(res, begin = 0, end = 0.8, option = "A") # palette
 cols <- palette[round(((imp - min(imp)) / diff(range(imp))) * (res-1)) + 1] # colors
 
-# x labels
+# y labels
 labels <- c()
 for (i in combined.df$model) {
   rep <- toupper(regmatches(i, regexpr("(?<=\\.)[a-zA-Z]+", i, perl = TRUE)))
   if (rep == "OTHERS") {
     rep <- "Others"
   } else if (rep == "UNKNOWN") {
-    rep <- "Unidtf"
+    rep <- "Unknown"
   }
   
   if (grepl(":", i)) {
-    type <- "int."
+    type <- "age x prop."
   } else if (sub("\\..*", "", i) == "prop") {
-    type <- "prop."
+    type <- "proportion"
   } else {
     type <- "age"
   }
   labels <- c(labels, paste(rep, type))
 }
 
-par(oma = c(0, 0, 3, 0))
-layout(matrix(1:2, ncol = 2), widths = c(4, 1)) # make 2 plots
+par(mar = c(7, 7, 4, 7) + 0.1) 
 
 # main plot
-par(mar = c(8, 4, 1, 0))
-int.range <- range(as.matrix(combined.df[c("lower", "upper")])) * 1.2
-int.range[2] <- int.range[2] * 1.2
-plot(y = combined.df$estimate, x = x, type = "n", ylim = int.range, 
-     ylab = "β coefficient", xlab = NA, axes = FALSE,
-     xlim = c(min(x)-0.25, max(x)+0.25), useRaster = T) # plot
-abline(h = 0, lty = 1, col = "black") # line at y = 0
-for (l in -100:100) {
-  abline(h = l, lty = 2, col = "grey") # line at y = 0
+x.range <- range(as.matrix(combined.df[c("lower", "upper")])) + c(-0.5, 0.5)
+plot(x = combined.df$estimate, y = y, type = "n", xlim = x.range, 
+     xlab = "β coefficient", ylab = NA, axes = FALSE,
+     ylim = range(y) + c(-0.7, 0.7), useRaster = T, mgp = c(2.2, 0, 0)) # plot
+abline(v = 0, lty = 1, col = "black") # line at y = 0
+for (l in -100:4) {
+  abline(v = l, lty = 2, col = "grey") # line at y = 0
 }
-segments(x, combined.df$lower, x, combined.df$upper, lwd = 2) # confidence bars
-segments(x-0.1, combined.df$upper, x+0.1, combined.df$upper, lwd = 2)
-segments(x-0.1, combined.df$lower, x+0.1, combined.df$lower, lwd = 2)
-points(x, combined.df$estimate, pch = 16, cex = 0.9, col = cols) # colored points
-axis(2) # y axis
-axis(2, at = seq(-10, 10, by = 0.5), labels = FALSE, tcl = -0.2)
-axis(2, at = seq(-10, 10, by = 1), labels = FALSE, tcl = -0.5)
-axis(1, at = x, labels = labels, las = 2) # x axis
+segments(combined.df$lower, y, combined.df$upper, y, lwd = 1.4) # confidence bars
+segments(combined.df$upper, y-0.2, combined.df$upper, y+0.2, lwd = 1.4)
+segments(combined.df$lower, y-0.2, combined.df$lower, y+0.2, lwd = 1.4)
+points(combined.df$estimate, y, pch = 16, cex = 2, col = cols) # colored points
+points(combined.df$estimate, y, pch = 16, cex = 0.324, col = "white") # center dots
+axis(1, at = pretty(x.range), mgp = c(1, 0.8, 0)  ) # x axis
+axis(1, at = seq(-10, 10, by = 0.5), labels = FALSE, tcl = -0.2)
+axis(1, at = seq(-10, 10, by = 1), labels = FALSE, tcl = -0.5)
+axis(2, at = y, labels = labels, las = 2, cex.axis = 0.9) # y axis
 box()
 
 # color bar
-par(mar = c(8, 1, 1, 4))
-height <- seq(min(imp), max(imp), length.out = res + 1) # y values
-z <- matrix(seq(min(imp), max(imp), length.out = res), nrow = 1, ncol = res) # color gradient
-image(x = c(0, 1), y = height, z = z, col = palette, 
-      axes = FALSE, xlab = "", ylab = "", useRaster = T) # make color bar
-ticks <- seq(min(imp), max(imp), length.out = 5) # ticks
-axis(4, at = ticks, labels = round(ticks, 2), las = 1) # y axis
+usr <- par("usr")
+bar <- array(t(col2rgb(palette)/255), c(1, length(palette), 3))
+fx1 <- 0.46; fx2 <- 0.86  # x
+fy1 <- 0.14; fy2 <- 0.19 # y
+xleft <- usr[1] + fx1 * diff(usr[1:2])
+xright <- usr[1] + fx2 * diff(usr[1:2])
+ybottom <- usr[3] + fy1 * diff(usr[3:4])
+ytop <- usr[3] + fy2 * diff(usr[3:4])
+rasterImage(array(t(col2rgb("white") / 255), dim = c(1, 1, 3)), 
+            xleft - 0.4, ybottom - 1, xright + 0.4, ytop + 0.8, interpolate = FALSE)
+rasterImage(bar, xleft, ybottom, xright, ytop, interpolate = FALSE)
+axis(
+  side = 1, 
+  at = seq(xleft, xright, length.out = 5), 
+  labels = round(seq(min(imp), max(imp), length.out = 5), 2), 
+  pos = ybottom - 0.01 * diff(usr[3:4]), 
+  tck = -0.01, 
+  cex.axis = 0.75, 
+  mgp = c(1, 0.05, 0)
+)
+text(mean(c(xleft, xright)), 
+     mean(c(ybottom, ytop)) + 0.65, 
+     adj = c(0.5, 0.5), cex = 0.85, 
+     labels = "Variable importance")
+rect(xleft - 0.4, ybottom - 1, xright + 0.4, ytop + 0.8, 
+     border = "black", lwd = 1)
 
-# title
-# mtext("Parameter estimates for averaged models", 
-#       outer = TRUE, cex = 1.1, line = 0, font = 2, family = "sans", 
-#       adj = 0.35)
+# lines separating clades
+for (j in line) {
+  j <- j - 1
+  rgb_vals <- col2rgb("white") / 255
+  bar <- array(t(rgb_vals), dim = c(1, 1, 3))
+  fx1 <- 0.02; fx2 <- 0.98  # x
+  xleft <- usr[1] + fx1 * diff(usr[1:2])
+  xright <- usr[1] + fx2 * diff(usr[1:2])
+  ybottom <- j - 0.13
+  ytop <- j + 0.13
+  rasterImage(bar, xleft, ybottom, xright, ytop, interpolate = FALSE)
+  segments(xleft, j, xright, j, lwd = 1.4, color = "")
+}
+
+# all species
+par(xpd = TRUE)
+text(4.8, 7.85, 
+     adj = c(0, 0.5), cex = 0.9, 
+     labels = "All species")
+text(4.8, 7.15, 
+     adj = c(0, 0.5), cex = 0.9, 
+     labels = "(5064 models)")
+
+# mammals
+text(4.8, 5.35, 
+     adj = c(0, 0.5), cex = 0.9, 
+     labels = "Mammals")
+text(4.8, 4.65, 
+     adj = c(0, 0.5), cex = 0.9,  
+     labels = "(1852 models)")
+
+# fish
+text(4.8, 3.35, 
+     adj = c(0, 0.5), cex = 0.9,  
+     labels = "Ray-finned fish")
+text(4.8, 2.65, 
+     adj = c(0, 0.5), cex = 0.9, 
+     labels = "(1858 models)")
+
+# reptiles
+text(4.8, 0.85, 
+     adj = c(0, 0.5), cex = 0.9, 
+     labels = "Reptiles")
+text(4.8, 0.15, 
+     adj = c(0, 0.5), cex = 0.9, 
+     labels = "(1045 models)")
+par(xpd = FALSE)
 par(mar = c(5, 4, 4, 2) + 0.1) 
-
-
-
-
-
-
-
-
 
 
 

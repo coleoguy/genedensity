@@ -78,17 +78,27 @@ for (i in 1:length(sp)) {
   
   df <- data.frame(species)
   for (l in colnames(divsum)[-1]) {
+    vec <- divsum[[l]]
+    
     # proportion
-    df[[paste0("prop.", tolower(l))]] <- sum(divsum[l] / asmbsz)
-
+    df[[paste0("prop.", tolower(l))]] <- sum(vec / asmbsz)
+    
     # age
-    df[[paste0("age.", tolower(l))]] <- which(cumsum(divsum[l]) > sum(divsum[l])/2)[1]
+    idx <- seq(vec)-1
+    # vec[vec <= 0] <- 0
+    if(any(vec[vec <= 0])) {
+      df[[paste0("age.", tolower(l))]] <- NA
+      next
+    }
+    values <- rep(idx, vec)
+    df[[paste0("age.", tolower(l))]] <- median(values)
+    rm(values)
+    gc()
   }
   repstats <- rbind(repstats, df)
+  print(species)
 }
 
-write.csv(repstats, "../results/repeat.results.csv", row.names = FALSE)
-
-
+write.csv(repstats, "../results/repeat-results.csv", row.names = FALSE)
 
 
