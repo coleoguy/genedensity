@@ -53,10 +53,11 @@ x.range <- range(as.matrix(combined.df[c("lower", "upper")])) + c(-0.5, 0.5)
 plot(x = combined.df$estimate, y = y, type = "n", xlim = x.range, 
      xlab = "β coefficient", ylab = NA, axes = FALSE,
      ylim = range(y) + c(-0.7, 0.7), useRaster = T, mgp = c(2.2, 0, 0)) # plot
-abline(v = 0, lty = 1, col = "black") # line at y = 0
-for (l in -100:4) {
-  abline(v = l, lty = 2, col = "grey") # line at y = 0
-}
+# abline(v = 0, lty = 1, lwd = 2, col = "grey") # line at y = 0
+abline(v = 0, lty = 5, lwd = 1, col = "black") # line at y = 0
+# for (l in -100:4) {
+#   abline(v = l, lty = 2, col = "grey") # vertical lines
+# }
 segments(combined.df$lower, y, combined.df$upper, y, lwd = 1.4) # confidence bars
 segments(combined.df$upper, y-0.2, combined.df$upper, y+0.2, lwd = 1.4)
 segments(combined.df$lower, y-0.2, combined.df$lower, y+0.2, lwd = 1.4)

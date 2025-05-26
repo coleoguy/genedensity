@@ -88,10 +88,15 @@ for (i in 1:length(sp)) {
     # vec[vec <= 0] <- 0
     if(any(vec < 0)) {
       df[[paste0("age.", tolower(l))]] <- NA
+      df[[paste0("age.sd.", tolower(l))]] <- NA
       next
     }
     values <- rep(idx, vec)
     df[[paste0("age.", tolower(l))]] <- median(values)
+    
+    # sd
+    df[[paste0("age.sd.", tolower(l))]] <- sd(values)
+    
     rm(values)
     gc()
   }
@@ -99,6 +104,6 @@ for (i in 1:length(sp)) {
   print(species)
 }
 
-write.csv(repstats, "../results/repeat-results.csv", row.names = FALSE)
+write.csv(repstats, "../results/test.csv", row.names = FALSE)
 
 

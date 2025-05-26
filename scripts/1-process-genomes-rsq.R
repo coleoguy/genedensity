@@ -32,7 +32,7 @@ max.contig <- 60
 results <- as.data.frame(matrix(NA, 0, 3))
 colnames(results) <- c("species","rsq","assem.sz")
 # begin loop
-for (i in c(1:length(all.species))){ # TODO change range
+for (i in c(1:length(all.species))){
   print(paste("Working on", all.species[i]))
   # assume first file is fasta
   fasta.path <- paste0("../data/genomes/",all.species[i], ".fa")
