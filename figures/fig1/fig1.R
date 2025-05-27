@@ -1,18 +1,18 @@
 
 
 library(data.table)
-source("../scripts/functions.R")
+source("../../scripts/functions.R")
 
 verbose <- T
 
-chrom <- read.csv("../data/chrom-and-gsz.csv")
+chrom <- read.csv("../../data/chrom-and-gsz.csv")
 
 # rsq scatter
 
 sp <- c("Ornithorhynchus_anatinus", "Theropithecus_gelada")
 for (i in 1:length(sp)) {
-  fasta.path <- paste0("../data/genomes/", sp[i], ".fa")
-  annot.path <- paste0("../data/genomes/", sp[i], ".gtf")
+  fasta.path <- paste0("../../data/genomes/", sp[i], ".fa")
+  annot.path <- paste0("../../data/genomes/", sp[i], ".gtf")
   max.contig <- 60
   fasta.data <- dataFromFasta(fasta.path = fasta.path, 
                               max.contig = max.contig,

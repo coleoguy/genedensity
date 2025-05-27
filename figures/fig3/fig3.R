@@ -6,10 +6,10 @@
 library(data.table)
 library(beeswarm)
 library(viridis)
-dat <- read.csv("../results/rsq.csv")
+dat <- read.csv("../../results/rsq.csv")
 dat <- na.omit(dat[, c("species", "clade", "rsq", "assem.sz")])
 dat$assem.sz <- dat$assem.sz * 1000000
-files <- list.files("../results/divsums")
+files <- list.files("../../results/divsums")
 masked.sp <- gsub(".divsum$", "", files)
 int <- intersect(masked.sp, dat$species)
 dat <- dat[dat$species %in% int, ]
@@ -26,7 +26,7 @@ for (i in dat$species) {
     par(mar = c(5.1, 0.7, 4.1, 4.2))
   }
   species <- i
-  divsum <- readLines(paste0("../results/divsums/", i, ".divsum"))
+  divsum <- readLines(paste0("../../results/divsums/", i, ".divsum"))
   phrase <- "Coverage for each repeat class and divergence (Kimura)"
   start.index <- match(phrase, divsum) + 1
   divsum <- divsum[start.index:length(divsum)]

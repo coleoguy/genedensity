@@ -2,7 +2,7 @@
 
 library(viridis)
 
-combined.df <- read.csv("../results/model-averaging.csv")
+combined.df <- read.csv("../../results/model-averaging.csv")
 
 # y positions
 y <- c()
