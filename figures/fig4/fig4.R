@@ -72,7 +72,7 @@ box()
 # color bar
 usr <- par("usr")
 bar <- array(t(col2rgb(palette)/255), c(1, length(palette), 3))
-fx1 <- 0.6; fx2 <- 0.936  # x
+fx1 <- 0.7; fx2 <- 0.955  # x
 fy1 <- 0.10; fy2 <- 0.14 # y
 xleft <- usr[1] + fx1 * diff(usr[1:2])
 xright <- usr[1] + fx2 * diff(usr[1:2])
