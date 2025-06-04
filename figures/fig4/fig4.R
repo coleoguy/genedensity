@@ -72,29 +72,29 @@ box()
 # color bar
 usr <- par("usr")
 bar <- array(t(col2rgb(palette)/255), c(1, length(palette), 3))
-fx1 <- 0.46; fx2 <- 0.86  # x
-fy1 <- 0.14; fy2 <- 0.19 # y
+fx1 <- 0.6; fx2 <- 0.936  # x
+fy1 <- 0.10; fy2 <- 0.14 # y
 xleft <- usr[1] + fx1 * diff(usr[1:2])
 xright <- usr[1] + fx2 * diff(usr[1:2])
 ybottom <- usr[3] + fy1 * diff(usr[3:4])
 ytop <- usr[3] + fy2 * diff(usr[3:4])
 rasterImage(array(t(col2rgb("white") / 255), dim = c(1, 1, 3)), 
-            xleft - 0.4, ybottom - 1, xright + 0.4, ytop + 0.8, interpolate = FALSE)
-rasterImage(bar, xleft, ybottom, xright, ytop, interpolate = FALSE)
+            xleft - 0.3, ybottom - 1, xright + 0.3, ytop + 0.8, interpolate = FALSE)
+rasterImage(bar, xleft, ybottom - 0.05, xright, ytop, interpolate = FALSE)
 axis(
   side = 1, 
   at = seq(xleft, xright, length.out = 5), 
   labels = round(seq(min(imp), max(imp), length.out = 5), 2), 
-  pos = ybottom - 0.01 * diff(usr[3:4]), 
-  tck = -0.01, 
-  cex.axis = 0.75, 
-  mgp = c(1, 0.05, 0)
+  pos = ybottom - 0.008 * diff(usr[3:4]), 
+  tck = -0.012, 
+  cex.axis = 0.64, 
+  mgp = c(1, -0.01, 1)
 )
 text(mean(c(xleft, xright)), 
-     mean(c(ybottom, ytop)) + 0.65, 
-     adj = c(0.5, 0.5), cex = 0.85, 
+     mean(c(ybottom, ytop)) + 0.53, 
+     adj = c(0.5, 0.5), cex = 0.7, 
      labels = "Variable importance")
-rect(xleft - 0.4, ybottom - 1, xright + 0.4, ytop + 0.8, 
+rect(xleft - 0.3, ybottom - 0.86, xright + 0.3, ytop + 0.7, 
      border = "black", lwd = 1)
 
 # lines separating clades
