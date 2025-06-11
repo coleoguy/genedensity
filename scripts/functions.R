@@ -62,3 +62,14 @@ howmany <- function(genes, exons) {
   nrow(exons[exons$V4 >= as.numeric(genes[4]) 
              & exons$V5 <= as.numeric(genes[5]), ])
 }
+
+# assign alpha to color
+co <- function(col, alpha = 1) {
+  col.rgb <- c(col2rgb(col))
+  new.col <- rgb(col.rgb[1], 
+                 col.rgb[2], 
+                 col.rgb[3], 
+                 alpha = alpha * 255, 
+                 maxColorValue = 255)
+  return(new.col)
+}
