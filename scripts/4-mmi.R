@@ -13,12 +13,14 @@ tree <- read.tree("../data/formatted-tree.nwk")
 
 combined.df <- data.frame()
 # loop for each clade
-for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
+for (i in 1:4) {
+  
+  clade <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")[i]
   
   # subset results
   dat <- merge(rsq, repeats, by.x = "species", by.y = "species", all.x = T, all.y = T)
-  if (i %in% c("Mammalia", "Actinopterygii", "Sauropsida")) {
-    dat <- dat[dat$clade %in% i, ]
+  if (clade %in% c("Mammalia", "Actinopterygii", "Sauropsida")) {
+    dat <- dat[dat$clade %in% clade, ]
   }
   variables <- colnames(dat)[grep("^(prop|age)\\.", colnames(dat))]
   dat <- na.omit(dat[, c("species", "clade", "rsq", variables)])
@@ -75,7 +77,7 @@ for (i in c("All", "Mammalia", "Actinopterygii", "Sauropsida")) {
   if (length(imp) == 0) {
     next
   }
-  df <- data.frame(i, 
+  df <- data.frame(clade, 
                    names(imp), 
                    num, 
                    sapply(1:nrow(ci), function(x) mean(unlist(ci[x, ]))), 

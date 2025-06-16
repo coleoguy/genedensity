@@ -85,3 +85,13 @@ if (sig < 0.05) {
   phylANOVA(pruned.tree, x, y, nsim = 10000, posthoc = TRUE)
 }
 
+
+
+
+
+
+
+
+
+
+
