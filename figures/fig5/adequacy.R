@@ -12,8 +12,8 @@ titles <- c("All species",
 
 par(
   mfrow = c(2, 2), 
-  mar   = c(2, 1, 2, 3), 
-  oma   = c(2, 4, 1, 7) 
+  mar = c(2, 1, 2, 3), 
+  oma = c(2, 4, 1, 7) 
 )
 
 var.cols <- c("steelblue", "firebrick")
@@ -113,7 +113,7 @@ par(xpd = NA)
 
 
 # axes
-text(cx(0.46), cy(0.06), "Variable β", cex = 1.3, adj = c(0.5,0.5))
+text(cx(0.45), cy(0.06), "Variable β", cex = 1.3, adj = c(0.5,0.5))
 text(cx(0.035), cy(0.51), "Density", srt = 90, cex = 1.3, adj = c(0.5,0.5))
 
 
