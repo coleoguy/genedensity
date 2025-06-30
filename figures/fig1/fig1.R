@@ -3,6 +3,7 @@
 library(data.table)
 source("../../scripts/functions.R")
 
+
 verbose <- T
 
 chrom <- read.csv("../../data/chrom-and-gsz.csv")
@@ -29,32 +30,43 @@ for (i in 1:length(sp)) {
 }
 
 
-par(mfrow = c(1, 2))
-par(mar = c(5.1, 4.1, 1, 0.9))
-color <- adjustcolor("#405070", alpha.f = 0.7)
+par(mfrow = c(1, 2), 
+    mar = c(4.1, 1.1, 1, 1.1),
+    oma = c(1, 4, 1, 3))
+color <- "#405070"
 plot(sp1$size.Mb, 
      sp1$genecount, 
      pch = 16, 
-     cex = 0.8, 
-     col = color, 
-     ylim = c(0.25, 3), 
-     xlim = c(0, 250), 
-     xlab = NA, 
-     ylab = "Gene count (thousands)")
-abline(glm(genecount ~ size.Mb, data = sp1), lwd = 1.5, col = color)
-par(mar = c(5.1, 2.9, 1, 2.1))
-color <- adjustcolor("#405070", alpha.f = 0.7)
-plot(sp2$size.Mb, 
-     sp2$genecount, 
-     pch = 16, 
-     cex = 0.8, 
-     col = color, 
+     cex = 0.9, 
+     col = co(color, 0.5), 
      ylim = c(0.25, 3), 
      xlim = c(0, 250), 
      xlab = NA, 
      ylab = NA)
+abline(glm(genecount ~ size.Mb, data = sp1), lwd = 1.5, col = color)
+plot(sp2$size.Mb, 
+     sp2$genecount, 
+     pch = 16, 
+     cex = 0.9, 
+     col = co(color, 0.5), 
+     ylim = c(0.25, 3), 
+     xlim = c(0, 250), 
+     xlab = NA, 
+     yaxt = "n", 
+     ylab = NA)
 abline(glm(genecount ~ size.Mb, data = sp2), lwd = 1.5, col = color)
 
-#text(-40, -0.01, "Chromosome size (Mb)", xpd = NA, adj = 0)
+text(cx(0.51), cy(0.08), 
+     "Chromosome size (Mb)", 
+     adj = c(0.5, 0.5), 
+     cex = 1.1, 
+     xpd = NA,)
+text(cx(0.045), cy(0.56), 
+     "Gene count (thousands)", 
+     srt = 90, 
+     adj = c(0.5, 0.5),
+     cex = 1.1, 
+     xpd = NA)
 par(mfrow = c(1, 1))
 par(mar = c(5.1, 4.1, 4.1, 2.1))
+
