@@ -100,10 +100,10 @@ co <- function(col, alpha = 1) {
   return(new.col)
 }
 
+# convert plotting coordinates
 cx <- function(x) {
   grconvertX(x, from = "ndc", to = "user")
 }
-
 cy <- function(y) {
   grconvertY(y, from = "ndc", to = "user")
 }

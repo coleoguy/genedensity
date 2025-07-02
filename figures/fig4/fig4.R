@@ -1,6 +1,7 @@
 
 
 library(viridis)
+source("../../scripts/functions.R")
 
 combined.df <- read.csv("../../results/model-averaging.csv")
 
@@ -14,7 +15,7 @@ for (i in 1:length(combined.df$clade)) {
     y <- c(y, tail(y, 1) + 1)
   } else {
     y <- c(y, tail(y, 1) + 2)
-    line <- c(line, tail(y, 1) - 1)
+    line <- c(line, tail(y, 1) - 2)
   }
   prev <- combined.df$clade[i]
 }
@@ -46,13 +47,13 @@ for (i in combined.df$model) {
   labels <- c(labels, paste(rep, type))
 }
 
-par(mar = c(7, 7, 4, 7) + 0.1) 
+par(mar = c(4, 7, 2, 7) + 0.1) 
 
 # main plot
 x.range <- range(as.matrix(combined.df[c("lower", "upper")])) + c(-0.5, 0.5)
 plot(x = combined.df$estimate, y = y, type = "n", xlim = x.range, 
      xlab = "β coefficient", ylab = NA, axes = FALSE,
-     ylim = range(y) + c(-0.7, 0.7), useRaster = T, mgp = c(2.2, 0, 0)) # plot
+     ylim = range(y) + c(-0.7, 0.7), mgp = c(2.2, 0, 0)) # plot
 # abline(v = 0, lty = 1, lwd = 2, col = "grey") # line at y = 0
 abline(v = 0, lty = 5, lwd = 1, col = "black") # line at y = 0
 # for (l in -100:4) {
@@ -70,31 +71,28 @@ axis(2, at = y, labels = labels, las = 2, cex.axis = 0.9) # y axis
 box()
 
 # color bar
+par(xpd=NA)
 usr <- par("usr")
 bar <- array(t(col2rgb(palette)/255), c(1, length(palette), 3))
-fx1 <- 0.65; fx2 <- 0.951  # x
-fy1 <- 0.095; fy2 <- 0.135 # y
-xleft <- usr[1] + fx1 * diff(usr[1:2])
-xright <- usr[1] + fx2 * diff(usr[1:2])
-ybottom <- usr[3] + fy1 * diff(usr[3:4])
-ytop <- usr[3] + fy2 * diff(usr[3:4])
-rasterImage(array(t(col2rgb("white") / 255), dim = c(1, 1, 3)), 
-            xleft - 0.3, ybottom - 0.9, xright + 0.3, ytop + 0.8, interpolate = FALSE)
-rasterImage(bar, xleft, ybottom - 0.05, xright, ytop, interpolate = FALSE)
+x1 <- 0.565; x2 <- 0.725  # x
+y1 <- 0.243; y2 <- 0.273 # y
+rasterImage(array(t(col2rgb("white") / 255), dim = c(1, 1, 3)), # background
+            cx(x1)-0.1, cy(y1)-0.1, cx(x2)+0.1, cy(y2)+0.1, interpolate = FALSE)
+rasterImage(bar, cx(x1), cy(y1), cx(x2), cy(y2), interpolate = FALSE) # color bar
 axis(
   side = 1, 
-  at = seq(xleft, xright, length.out = 5), 
+  at = seq(cx(x1), cx(x2), length.out = 5), 
   labels = round(seq(min(imp), max(imp), length.out = 5), 2), 
-  pos = ybottom - 0.008 * diff(usr[3:4]), 
+  pos = cy(y1) - 0.008 * diff(usr[3:4]), 
   tck = -0.012, 
   cex.axis = 0.75, 
   mgp = c(1, -0.01, 1)
 )
-text(mean(c(xleft, xright)), 
-     mean(c(ybottom, ytop)) + 0.53, 
-     adj = c(0.5, 0.5), cex = 0.7, 
+text(mean(c(cx(x1), cx(x2))), 
+     mean(c(cy(y1), cy(y2))) + 0.45, 
+     adj = c(0.5, 0.5), cex = 0.75, 
      labels = "Variable importance")
-rect(xleft - 0.37, ybottom - 0.86, xright + 0.37, ytop + 0.7, 
+rect(cx(x1)-0.43, cy(y1)-0.62, cx(x2)+0.4, cy(y2)+0.51, 
      border = "black", lwd = 1)
 
 # lines separating clades
@@ -113,34 +111,34 @@ for (j in line) {
 
 # all species
 par(xpd = TRUE)
-text(4.8, 7.85, 
+text(4.8, 6.83, 
      adj = c(0, 0.5), cex = 0.9, 
      labels = "All species")
-text(4.8, 7.15, 
+text(4.8, 6.23, 
      adj = c(0, 0.5), cex = 0.9, 
-     labels = "(5064 models)")
+     labels = "(3827 models)")
 
 # mammals
-text(4.8, 5.35, 
+text(4.8, 4.33, 
      adj = c(0, 0.5), cex = 0.9, 
      labels = "Mammals")
-text(4.8, 4.65, 
+text(4.8, 3.73, 
      adj = c(0, 0.5), cex = 0.9,  
-     labels = "(1852 models)")
+     labels = "(2467 models)")
 
 # fish
-text(4.8, 3.35, 
+text(4.8, 2.33, 
      adj = c(0, 0.5), cex = 0.9,  
      labels = "Ray-finned fish")
-text(4.8, 2.65, 
+text(4.8, 1.73, 
      adj = c(0, 0.5), cex = 0.9, 
      labels = "(1858 models)")
 
 # reptiles
-text(4.8, 0.85, 
+text(4.8, 0.33, 
      adj = c(0, 0.5), cex = 0.9, 
      labels = "Reptiles")
-text(4.8, 0.15, 
+text(4.8, -0.27, 
      adj = c(0, 0.5), cex = 0.9, 
      labels = "(1045 models)")
 par(xpd = FALSE)
