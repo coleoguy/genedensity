@@ -16,7 +16,7 @@ variables <- colnames(dat)[grep("^(prop|age)\\.", colnames(dat))]
 dat <- na.omit(dat[, c("species", "clade", "rsq", variables)])
 clades <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")
 
-for (h in 1:10) { # for each run
+for (h in 1:1000) { # for each run
   
   print(h)
   run.results <- c()
