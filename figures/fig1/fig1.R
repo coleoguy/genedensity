@@ -2,13 +2,8 @@
 
 library(data.table)
 source("../../scripts/functions.R")
-
-
-verbose <- T
-
 chrom <- read.csv("../../data/chrom-and-gsz.csv")
-
-# rsq scatter
+verbose <- T
 
 sp <- c("Ornithorhynchus_anatinus", "Theropithecus_gelada")
 for (i in 1:length(sp)) {
@@ -56,16 +51,16 @@ plot(sp2$size.Mb,
      ylab = NA)
 abline(glm(genecount ~ size.Mb, data = sp2), lwd = 1.5, col = color)
 
-text(cx(0.51), cy(0.08), 
+text(cx(0.51), cy(0.07), 
      "Chromosome size (Mb)", 
      adj = c(0.5, 0.5), 
-     cex = 1.1, 
+     cex = 1.25, 
      xpd = NA,)
-text(cx(0.045), cy(0.56), 
+text(cx(0.035), cy(0.56), 
      "Gene count (thousands)", 
      srt = 90, 
      adj = c(0.5, 0.5),
-     cex = 1.1, 
+     cex = 1.25, 
      xpd = NA)
 par(mfrow = c(1, 1))
 par(mar = c(5.1, 4.1, 4.1, 2.1))

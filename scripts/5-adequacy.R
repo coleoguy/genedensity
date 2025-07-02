@@ -31,17 +31,20 @@ for (h in 1:10) { # for each run
   dat[, perm.colname] <- block
   
   for (i in 1:4) { # for each clade
-    clade <- clades[i]
-    sub <- dat
+    
+    clade <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")[i]
     
     # subset results
+    dat <- merge(rsq, repeats, by.x = "species", by.y = "species", all.x = T, all.y = T)
     if (clade %in% c("Mammalia", "Actinopterygii", "Sauropsida")) {
-      sub <- sub[sub$clade %in% clade, ]
+      dat <- dat[dat$clade %in% clade, ]
     }
+    variables <- colnames(dat)[grep("^(prop|age)\\.", colnames(dat))]
+    dat <- na.omit(dat[, c("species", "clade", "rsq", variables)])
     
     # rescale
     for (j in variables) {
-      sub[[j]] <- (sub[[j]]-min(sub[[j]])) / diff(range(sub[[j]]))
+      dat[[j]] <- (dat[[j]]-min(dat[[j]])) / diff(range(dat[[j]]))
     }
     
     # set up interactions
@@ -53,12 +56,8 @@ for (h in 1:10) { # for each run
     )
     
     # gls
-    global.model <- glm(reformulate(all.terms, response = "rsq"), data = sub)
-    
-    # pgls
-    # cd <- comparative.data(tree, sub, names.col = "species", vcv = TRUE)
-    # global.model <- pgls(reformulate(all.terms, response = "rsq"), data = cd)
-    
+    global.model <- glm(reformulate(all.terms, response = "rsq"), data = dat)
+
     # set constraints
     model.terms <- unlist(strsplit(as.character(global.model$formula)[3], " \\+ "))
     model.interactions <- grep(":", model.terms, value = TRUE)
@@ -70,13 +69,23 @@ for (h in 1:10) { # for each run
     subset.expr <- parse(text = paste(constraints, collapse = " & "))[[1]]
     
     # dredge
-    num <- ifelse(nrow(sub) > 21, 16, 15) # get rid of error in reptiles
     models <- dredge(global.model, 
                      subset = subset.expr, 
-                     m.lim = c(0, num)
+                     m.lim = c(0, nrow(dat)-2) # ensure degree of freedom is greater than zero
                      # extra = list(shapirowilk.p = sw.test, lambda.p = lambda.test)
     )
     models <- models[order(models$AICc), ]
+    
+    #################### FOR REPTILES ####################
+    if (clade == "Sauropsida") {                         #
+      loocv.mse(models, c(1:10))                         #
+      sample.mse(models, c(1:10))                        #
+      # top models do not fit well                       #
+      # we will remove these models:                     #
+      to.remove <- c(1:6)                                #
+      models <- model.rm(models, to.remove)              #
+    }                                                    #
+    ######################################################
     models <- models[cumsum(models$weight) <= 0.95, ]
     
     # get CIs and int in a vector

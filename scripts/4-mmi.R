@@ -56,13 +56,24 @@ for (i in 1:4) {
   subset.expr <- parse(text = paste(constraints, collapse = " & "))[[1]]
   
   # dredge
-  num <- ifelse(nrow(dat) > 21, 16, 15) # get rid of error in reptiles
   models <- dredge(global.model, 
                    subset = subset.expr, 
-                   m.lim = c(0, num)
+                   m.lim = c(0, nrow(dat)-2) # ensure degree of freedom is greater than zero
                    # extra = list(shapirowilk.p = sw.test, lambda.p = lambda.test)
   )
   models <- models[order(models$AICc), ]
+  
+  #################### FOR REPTILES ####################
+  if (clade == "Sauropsida") {                         #
+    loocv.mse(models, c(1:10))                         #
+    sample.mse(models, c(1:10))                        #
+    # top models do not fit well                       #
+    # we will remove these models:                     #
+    to.remove <- c(1:6)                                #
+    models <- model.rm(models, to.remove)              #
+  }                                                    #
+  ######################################################
+  
   models <- models[cumsum(models$weight) <= 0.95, ]
   num <- nrow(models)
   imp <- sort(sw(models), decreasing = TRUE)

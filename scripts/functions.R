@@ -51,9 +51,35 @@ sw.test <- function(model) {
 
 # Pagel's lambda
 lambda.test <- function(model) {
-  res <- setNames(residuals(model), dat$species)
-  lambda.p <- phylosig(tree, res, method = "lambda", test = TRUE, niter = 100)$P
+  if (length(coef(model)) < length(residuals(model))) {
+    res <- setNames(residuals(model), dat$species)
+    lambda.p <- phylosig(tree, res, method = "lambda", test = TRUE, niter = 1000)$P
+    return(lambda.p)
+  } else {
+    lambda.p <- -42 # placeholder
+  }
   return(lambda.p)
+}
+
+# calculate mse of leave-one-out cross-validation from MuMIn model selection table
+loocv.mse <- function(models, number) {
+  mse <- c()
+  for (z in number) {
+    fit <- get.models(models, subset = z)[[1]]
+    press <- sum((residuals(fit) / (1 - hatvalues(fit)))^2)
+    mse <- c(mse, press / length(residuals(fit)))
+  }
+  return(mse)
+}
+
+# calculate in-sample mse from MuMIn model selection table
+sample.mse <- function(models, number) {
+  mse <- c()
+  for (z in number) {
+    fit <- get.models(models, subset = z)[[1]]
+    mse <- c(mse, mean(residuals(fit)^2))
+  }
+  return(mse)
 }
 
 # how many exons in a gene
@@ -82,3 +108,17 @@ cy <- function(y) {
   grconvertY(y, from = "ndc", to = "user")
 }
 
+# remove models by index from MuMIn's model selection table
+model.rm <- function(models, rm.rows) {
+  models <- models[-c(rm.rows), ]
+  at <- attributes(models)
+  at$model.calls <- at$model.calls[-rm.rows]
+  at$coefTables <- at$coefTables[-rm.rows]
+  
+  models$delta <- models$AICc - min(models$AICc)
+  models$weight <- exp(-0.5 * models$delta)
+  models$weight <- models$weight / sum(models$weight)
+  
+  attributes(models) <- at
+  return(models)
+}
