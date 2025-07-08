@@ -113,11 +113,11 @@ par(xpd = NA)
 
 
 # axes
-text(cx(0.45), cy(0.06), "Variable β", cex = 1.3, adj = c(0.5,0.5))
+text(cx(0.46), cy(0.06), "Variable β", cex = 1.3, adj = c(0.5,0.5))
 text(cx(0.035), cy(0.51), "Density", srt = 90, cex = 1.3, adj = c(0.5,0.5))
 
 
-x <- 0.88
+x <- 0.9
 y1 <- 0.7
 y2 <- 0.6
 y3 <- 0.35

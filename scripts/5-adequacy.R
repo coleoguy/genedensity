@@ -11,35 +11,33 @@ rsq <- read.csv("../results/rsq.csv")
 repeats <- read.csv("../results/repeat-results.csv")
 tree <- read.tree("../data/formatted-tree.nwk")
 
-dat <- merge(rsq, repeats, by.x = "species", by.y = "species", all.x = T, all.y = T)
-variables <- colnames(dat)[grep("^(prop|age)\\.", colnames(dat))]
-dat <- na.omit(dat[, c("species", "clade", "rsq", variables)])
+main <- merge(rsq, repeats, by.x = "species", by.y = "species", all.x = T, all.y = T)
+variables <- colnames(main)[grep("^(prop|age)\\.", colnames(main))]
+main <- na.omit(main[, c("species", "clade", "rsq", variables)])
 clades <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")
+constant.cols <- c("species", "clade", "rsq")
 
-for (h in 1:1000) { # for each run
+for (h in 1:2000) { # for each run
   
   print(h)
   run.results <- c()
   
   # permute
-  constant.cols <- c("species", "clade", "rsq")
-  perm.colname <- setdiff(names(dat), constant.cols)
-  block <- dat[, perm.colname]
+  perm.colname <- setdiff(names(main), constant.cols)
+  block <- main[, perm.colname]
   for (l in 1:length(block)) {
     block[, l] <- sample(block[, l])
   }
-  dat[, perm.colname] <- block
+  main[, perm.colname] <- block
   
   for (i in 1:4) { # for each clade
-    
-    clade <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")[i]
+    dat <- main
+    clade <- clades[i]
     
     # subset results
-    dat <- merge(rsq, repeats, by.x = "species", by.y = "species", all.x = T, all.y = T)
     if (clade %in% c("Mammalia", "Actinopterygii", "Sauropsida")) {
       dat <- dat[dat$clade %in% clade, ]
     }
-    variables <- colnames(dat)[grep("^(prop|age)\\.", colnames(dat))]
     dat <- na.omit(dat[, c("species", "clade", "rsq", variables)])
     
     # rescale
@@ -57,7 +55,7 @@ for (h in 1:1000) { # for each run
     
     # gls
     global.model <- glm(reformulate(all.terms, response = "rsq"), data = dat)
-
+    
     # set constraints
     model.terms <- unlist(strsplit(as.character(global.model$formula)[3], " \\+ "))
     model.interactions <- grep(":", model.terms, value = TRUE)
@@ -72,7 +70,6 @@ for (h in 1:1000) { # for each run
     models <- dredge(global.model, 
                      subset = subset.expr, 
                      m.lim = c(0, nrow(dat)-2) # ensure degree of freedom is greater than zero
-                     # extra = list(shapirowilk.p = sw.test, lambda.p = lambda.test)
     )
     models <- models[order(models$AICc), ]
     
@@ -108,7 +105,7 @@ for (h in 1:1000) { # for each run
     }
   }
   df[[paste0("run", h)]] <- run.results
-  write.csv(df, "../results/permute.csv", row.names = F)
+  # write.csv(df, "../results/permute.csv", row.names = F)
   gc()
 }
-
+write.csv(df, "../results/permute.csv", row.names = F)

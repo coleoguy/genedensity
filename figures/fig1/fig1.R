@@ -65,3 +65,16 @@ text(cx(0.035), cy(0.56),
 par(mfrow = c(1, 1))
 par(mar = c(5.1, 4.1, 4.1, 2.1))
 
+text(cx(0.16), cy(0.88), 
+     "A", 
+     font = 2, 
+     adj = c(0.5, 0.5), 
+     cex = 1, 
+     xpd = NA,)
+
+text(cx(0.569), cy(0.88), 
+     "B", 
+     font = 2, 
+     adj = c(0.5, 0.5), 
+     cex = 1.1, 
+     xpd = NA,)

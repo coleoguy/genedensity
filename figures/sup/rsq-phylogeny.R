@@ -27,3 +27,16 @@ plot(p,
      ftype = "off", 
      plot = TRUE)
 
+# tip labels
+plot(p, 
+     res = 300,
+     lwd = c(1.5, 5),
+     fsize = c(0.6, 0.5), 
+     outline = FALSE,
+     sig = 2,
+     xlim = c(0, 115), 
+     ylim = c(-230, 420),  #450
+     direction = "downwards", 
+     legend = FALSE, 
+     plot = TRUE)
+
