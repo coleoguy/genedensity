@@ -25,9 +25,15 @@ for (h in 1:2000) { # for each run
   # permute
   perm.colname <- setdiff(names(main), constant.cols)
   block <- main[, perm.colname]
-  for (l in 1:length(block)) {
-    block[, l] <- sample(block[, l])
-  }
+  
+  # block
+  block <- block[sample(nrow(block)), ]
+  
+  # independent
+  # for (l in 1:length(block)) {
+  #   block[, l] <- sample(block[, l])
+  # }
+  
   main[, perm.colname] <- block
   
   for (i in 1:4) { # for each clade
@@ -67,22 +73,12 @@ for (h in 1:2000) { # for each run
     subset.expr <- parse(text = paste(constraints, collapse = " & "))[[1]]
     
     # dredge
+    ifelse(clade == "Sauropsida", subtract.var <- 3, subtract.var <- 2)
     models <- dredge(global.model, 
                      subset = subset.expr, 
-                     m.lim = c(0, nrow(dat)-2) # ensure degree of freedom is greater than zero
+                     m.lim = c(0, nrow(dat) - subtract.var) # ensure degree of freedom is greater than zero
     )
     models <- models[order(models$AICc), ]
-    
-    #################### FOR REPTILES ####################
-    if (clade == "Sauropsida") {                         #
-      loocv.mse(models, c(1:10))                         #
-      sample.mse(models, c(1:10))                        #
-      # top models do not fit well                       #
-      # we will remove these models:                     #
-      to.remove <- c(1:6)                                #
-      models <- model.rm(models, to.remove)              #
-    }                                                    #
-    ######################################################
     models <- models[cumsum(models$weight) <= 0.95, ]
     
     # get CIs and int in a vector
