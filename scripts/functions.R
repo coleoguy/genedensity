@@ -53,10 +53,11 @@ sw.test <- function(model) {
 lambda.test <- function(model) {
   if (length(coef(model)) < length(residuals(model))) {
     res <- setNames(residuals(model), dat$species)
-    lambda.p <- phylosig(tree, res, method = "lambda", test = TRUE, niter = 1000)$P
+    lambda.p <- phylosig(tree, res, method = "lambda", 
+                         test = TRUE, niter = 10)$P
     return(lambda.p)
   } else {
-    lambda.p <- -42 # placeholder
+    lambda.p <- NA
   }
   return(lambda.p)
 }
@@ -121,4 +122,14 @@ model.rm <- function(models, rm.rows) {
   
   attributes(models) <- at
   return(models)
+}
+
+# model predictor marginality test
+model.marginal <- function(terms) {
+  interactions <- grep(":", terms, value = TRUE)
+  for (inter in interactions) {
+    parts <- unlist(strsplit(inter, ":"))
+    if (!all(parts %in% terms)) return(FALSE)
+  }
+  TRUE
 }

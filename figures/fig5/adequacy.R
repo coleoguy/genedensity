@@ -3,7 +3,7 @@ source("../../scripts/functions.R")
 library(viridis)
 
 significant <- read.csv("../../results/model-averaging.csv")
-null <- read.csv("../../results/permute-block.csv")
+null <- read.csv("../../results/permute.csv")
 
 titles <- c("All species", 
             "Mammals", 

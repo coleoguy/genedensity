@@ -41,10 +41,6 @@ for (i in 1:4) {
   # gls
   global.model <- glm(reformulate(all.terms, response = "rsq"), data = dat)
   
-  # pgls
-  # cd <- comparative.data(tree, dat, names.col = "species", vcv = TRUE)
-  # global.model <- pgls(reformulate(all.terms, response = "rsq"), data = cd)
-  
   # set constraints
   model.terms <- unlist(strsplit(as.character(global.model$formula)[3], " \\+ "))
   model.interactions <- grep(":", model.terms, value = TRUE)
