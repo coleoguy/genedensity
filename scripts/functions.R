@@ -54,7 +54,7 @@ lambda.test <- function(model) {
   if (length(coef(model)) < length(residuals(model))) {
     res <- setNames(residuals(model), dat$species)
     lambda.p <- phylosig(tree, res, method = "lambda", 
-                         test = TRUE, niter = 10)$P
+                         test = TRUE, niter = 1000)$P
     return(lambda.p)
   } else {
     lambda.p <- NA

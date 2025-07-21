@@ -1,10 +1,6 @@
-
-library(MuMIn) # multimodel inference
-library(phytools) # load and prune tree
-library(caper) # PGLS
-options(na.action = "na.fail")  
-
-# functions
+library(MuMIn)
+library(phytools)
+library(caper)
 source("functions.R")
 
 rsq <- read.csv("../results/rsq.csv")
@@ -12,12 +8,11 @@ repeats <- read.csv("../results/repeat-results.csv")
 tree <- read.tree("../data/formatted-tree.nwk")
 
 combined.df <- data.frame()
+clades <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")
 # loop for each clade
 for (i in 1:4) {
-  
-  clade <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")[i]
-  
   # subset results
+  clade <- clades[i]
   dat <- merge(rsq, repeats, by.x = "species", by.y = "species", all.x = T, all.y = T)
   if (clade %in% c("Mammalia", "Actinopterygii", "Sauropsida")) {
     dat <- dat[dat$clade %in% clade, ]
@@ -30,47 +25,56 @@ for (i in 1:4) {
     dat[[j]] <- (dat[[j]]-min(dat[[j]])) / diff(range(dat[[j]]))
   }
   
-  # set up interactions
-  rep <- unique(sub("^[^.]*\\.", "", variables))
-  interactions <- paste0("age.", rep, ":prop.", rep)
+  # identify all predictors
+  repeats <- unique(sub("^[^.]*\\.", "", variables))
+  interactions <- paste0("age.", repeats, ":prop.", repeats)
   all.terms <- c(
     variables, 
     interactions
   )
   
-  # gls
-  global.model <- glm(reformulate(all.terms, response = "rsq"), data = dat)
+  # pgls
+  # cd <- comparative.data(tree, dat, names.col = "species", vcv = TRUE)
   
-  # set constraints
-  model.terms <- unlist(strsplit(as.character(global.model$formula)[3], " \\+ "))
-  model.interactions <- grep(":", model.terms, value = TRUE)
-  constraints <- character(length(model.interactions))
-  for (k in seq_along(model.interactions)) {
-    parts <- strsplit(model.interactions[k], ":")[[1]]
-    constraints[k] <- sprintf("((!`%s`) | (%s & %s))", model.interactions[k], parts[1], parts[2])
+  # n <- nrow(cd$data)
+  n <- nrow(dat)
+  max.vars <- n-2 # leave 2 degrees of freedom
+  
+  # fit models
+  model.list <- list()
+  model.idx <- 1
+  for (k in 0:length(all.terms)) {
+    if (k == 0) {
+      fml <- as.formula("rsq ~ 1")
+      # fit <- pgls(fml, data = cd)
+      fit <- glm(fml, data = dat)
+      model.name <- paste0("M", model.idx)
+      model.list[[model.name]] <- fit
+      model.idx <- model.idx + 1
+      next
+    }
+    combos <- combn(all.terms, k, simplify = FALSE)
+    for (m in combos) {
+      fml <- as.formula(paste("rsq ~", paste(m, collapse = " + ")))
+      predictor.num <- length(attr(terms(fml), "term.labels"))
+      if (predictor.num >= max.vars) next
+      if (!model.marginal(m)) next
+      # fit <- pgls(fml, data = cd)
+      fit <- glm(fml, data = dat)
+      model.name <- paste0("M", model.idx)
+      model.list[[model.name]] <- fit
+      model.idx <- model.idx + 1
+    }
   }
-  subset.expr <- parse(text = paste(constraints, collapse = " & "))[[1]]
   
-  # dredge
-  models <- dredge(global.model, 
-                   subset = subset.expr, 
-                   m.lim = c(0, nrow(dat)-2) # ensure degree of freedom is greater than zero
-                   # extra = list(shapirowilk.p = sw.test, lambda.p = lambda.test)
-  )
+  # create model selection table
+  models <- model.sel(model.list)
   models <- models[order(models$AICc), ]
-  
-  #################### FOR REPTILES ####################
-  if (clade == "Sauropsida") {                         #
-    loocv.mse(models, c(1:10))                         #
-    sample.mse(models, c(1:10))                        #
-    # top models do not fit well                       #
-    # we will remove these models:                     #
-    to.remove <- c(1:6)                                #
-    models <- model.rm(models, to.remove)              #
-  }                                                    #
-  ######################################################
-  
   models <- models[cumsum(models$weight) <= 0.95, ]
+  rm(model.list)
+  gc()
+  
+  # average and calculate CIs
   num <- nrow(models)
   imp <- sort(sw(models), decreasing = TRUE)
   avg <- model.avg(models)
@@ -78,12 +82,15 @@ for (i in 1:4) {
   ci <- ci[match(names(imp), row.names(ci)), ] # match ci
   ci <- as.data.frame(ci)
   
+  # subset significant models
   idx <- which(sign(ci[, 1]) == sign(ci[, 2])) # idx where 0 is not in ci
-  ci <- ci[idx, ]# subset ci
-  imp <- imp[idx]# subset importance
+  ci <- ci[idx, ] # subset ci
+  imp <- imp[idx] # subset importance
   if (length(imp) == 0) {
     next
   }
+  
+  # append to results
   df <- data.frame(clade, 
                    names(imp), 
                    num, 
@@ -92,14 +99,21 @@ for (i in 1:4) {
                    ci[, 1], 
                    ci[, 2])
   colnames(df) <- c("clade", "model", "num.models", "estimate", "importance", "lower", "upper")
-  
   if (nrow(combined.df) == 0) {
     combined.df <- df
   } else {
     combined.df <- rbind(combined.df, df)
   }
+  
+  # add lambda p values and save table
+  new <- c()
+  for (n in 1:nrow(models)) {
+    l <- get.models(models, subset = n)[[1]]
+    new[n] <- lambda.test(l)
+  }
+  models$lambda.p <- new
+  write.csv(combined.df, paste0("../results/", tolower(clade), "-models.csv"), row.names = F)
 }
 combined.df <- combined.df[combined.df$importance > 0.5, ]
 write.csv(combined.df, "../results/model-averaging.csv", row.names = F)
-
 
