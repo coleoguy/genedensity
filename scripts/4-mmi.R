@@ -1,3 +1,11 @@
+# Zhaobo Hu
+# zhaobohu2002@gmail.com
+
+# Finds significant models and predictors of R2 using IT-based model averaging. 
+# Safe to run on low observation count. Can choose between glm() and pgls() models
+# and optionally generate a csv of all significant models
+
+
 library(MuMIn)
 library(phytools)
 library(caper)
@@ -26,8 +34,8 @@ for (i in 1:4) {
   }
   
   # identify all predictors
-  repeats <- unique(sub("^[^.]*\\.", "", variables))
-  interactions <- paste0("age.", repeats, ":prop.", repeats)
+  repeat.types <- unique(sub("^[^.]*\\.", "", variables))
+  interactions <- paste0("age.", repeat.types, ":prop.", repeat.types)
   all.terms <- c(
     variables, 
     interactions

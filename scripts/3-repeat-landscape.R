@@ -1,3 +1,8 @@
+# Zhaobo Hu
+# zhaobohu2002@gmail.com
+
+# Operates on repeat alignment results. Summarizes repeat volume and age using 
+# median divergence and the proportion of repeats in the genome
 
 dat <- read.csv("../results/rsq.csv")
 files <- list.files("../results/divsums")

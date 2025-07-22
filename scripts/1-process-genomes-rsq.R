@@ -1,17 +1,9 @@
 # Zhaobo Hu
 # zhaobohu2002@gmail.com
 
-# Description: reads files from a directory containing fasta and gtf/gff3 files
-# of all species to be analyzed. The script will alphabetically sort all species
-# in the directly and loop through each of them. Haploid chromosome numbers for 
-# each species are recored in gene_density/data/chromnums.csv. If chromosome 
-# number is recorded for a species, the script will read the fasta of the 
-# species and extract the assembly size as well as the contig sizes of the 2N 
-# longest contigs, where N is the haploid chromosome number. Next, gene counts 
-# for each of the 2N longest contigs are gathered from the gtf/gff3 file. Gene
-# density for each contig is calculated by dividing the gene count of each
-# contig by the size of each contig. The results for each species is saved in
-# its separate csv file
+# Runs on Ensembl genome assemblies. If an assembly has enough large contigs, 
+# fit a linear model using these contigs where contig size predicts the number of
+# genes on each contig. Record the R2 value as a measure of gene density homogeneity
 
 # load library
 library(data.table)

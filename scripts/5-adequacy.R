@@ -1,3 +1,8 @@
+# Zhaobo Hu
+# zhaobohu2002@gmail.com
+
+# A permutation-based approach to assess model adequacy
+
 
 library(MuMIn) # multimodel inference
 library(phytools) # load and prune tree
@@ -119,3 +124,4 @@ for (h in 1:3) { # for each run
   gc()
 }
 write.csv(df, "../results/permute.csv", row.names = F)
+

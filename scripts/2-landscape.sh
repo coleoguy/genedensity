@@ -1,29 +1,30 @@
 #!/bin/bash
 
-# config
+
+# Zhaobo Hu
+# zhaobohu2002@gmail.com
+
+# Runs on Ensembl genome assemblies. If an assembly has enough large contigs, 
+# fit a linear model using these contigs where contig size predicts the number of
+# genes on each contig. Record the R2 value as a measure of gene density homogeneity
+
+# threads=number
 threads=30
-# path to data directory
+# data=path/to/data/directory
 data=/mnt/md0/genedensity/landscape/genomes
-# path to result directory
+# divsums=path/to/result/directory
 divsums=/mnt/md0/genedensity/landscape
-# path to ID library for famdb.py
+# path/to/epeatMaskerLib.h5
 library=/home/blackmonlab/anaconda3/envs/Genome_Masking/share/RepeatMasker/Libraries/RepeatMaskerLib.h5
 
 # set locale
 export LANG=en_US.utf8
 export LC_ALL=en_US.utf8
 
-# activate conda environment
-source /home/blackmonlab/anaconda3/etc/profile.d/conda.sh
-conda activate Genome_Masking || { echo "Failed to activate conda environment"; exit 1; }
-
 # BuildDatabase, calcDivergenceFromAlign.pl, RepeatMasker, RepeatModeler:famdb.py
 export PATH=$PATH:/home/blackmonlab/anaconda3/envs/Genome_Masking/bin:/home/blackmonlab/anaconda3/envs/Genome_Masking/share/RepeatMasker
 # SearchResult.pm
 export PERL5LIB=/home/blackmonlab/anaconda3/envs/Genome_Masking/share/RepeatMasker:$PERL5LIB
-
-
-
 
 # set up logs
 jobname="align1"
