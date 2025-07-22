@@ -106,13 +106,13 @@ for (i in 1:4) {
   }
   
   # add lambda p values and save table
-  new <- c()
-  for (n in 1:nrow(models)) {
-    l <- get.models(models, subset = n)[[1]]
-    new[n] <- lambda.test(l)
-  }
-  models$lambda.p <- new
-  write.csv(models, paste0("../results/", tolower(clade), "-models.csv"), row.names = F)
+  # lambda.p <- c()
+  # for (n in 1:nrow(models)) {
+  #   l <- get.models(models, subset = n)[[1]]
+  #   lambda.p[n] <- lambda.test(l)
+  # }
+  # models$lambda.p <- lambda.p
+  # write.csv(data.frame(models), paste0("../results/", tolower(clade), "-models.csv"), row.names = F)
 }
 combined.df <- combined.df[combined.df$importance > 0.5, ]
 write.csv(combined.df, "../results/model-averaging.csv", row.names = F)
