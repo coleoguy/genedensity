@@ -17,7 +17,7 @@ main <- na.omit(main[, c("species", "clade", "rsq", variables)])
 clades <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")
 constant.cols <- c("species", "clade", "rsq")
 
-for (h in 1:2000) { # for each run
+for (h in 1:3) { # for each run
   
   print(h)
   run.results <- c()
@@ -28,12 +28,6 @@ for (h in 1:2000) { # for each run
   
   # block
   block <- block[sample(nrow(block)), ]
-  
-  # independent
-  # for (l in 1:length(block)) {
-  #   block[, l] <- sample(block[, l])
-  # }
-  
   main[, perm.colname] <- block
   
   for (i in 1:4) { # for each clade
@@ -44,6 +38,7 @@ for (h in 1:2000) { # for each run
     if (clade %in% c("Mammalia", "Actinopterygii", "Sauropsida")) {
       dat <- dat[dat$clade %in% clade, ]
     }
+    variables <- colnames(dat)[grep("^(prop|age)\\.", colnames(dat))]
     dat <- na.omit(dat[, c("species", "clade", "rsq", variables)])
     
     # rescale
@@ -51,39 +46,58 @@ for (h in 1:2000) { # for each run
       dat[[j]] <- (dat[[j]]-min(dat[[j]])) / diff(range(dat[[j]]))
     }
     
-    # set up interactions
-    rep <- unique(sub("^[^.]*\\.", "", variables))
-    interactions <- paste0("age.", rep, ":prop.", rep)
+    # identify all predictors
+    repeats <- unique(sub("^[^.]*\\.", "", variables))
+    interactions <- paste0("age.", repeats, ":prop.", repeats)
     all.terms <- c(
       variables, 
       interactions
     )
     
-    # gls
-    global.model <- glm(reformulate(all.terms, response = "rsq"), data = dat)
+    # pgls
+    # cd <- comparative.data(tree, dat, names.col = "species", vcv = TRUE)
     
-    # set constraints
-    model.terms <- unlist(strsplit(as.character(global.model$formula)[3], " \\+ "))
-    model.interactions <- grep(":", model.terms, value = TRUE)
-    constraints <- character(length(model.interactions))
-    for (k in seq_along(model.interactions)) {
-      parts <- strsplit(model.interactions[k], ":")[[1]]
-      constraints[k] <- sprintf("((!`%s`) | (%s & %s))", model.interactions[k], parts[1], parts[2])
+    # n <- nrow(cd$data)
+    n <- nrow(dat)
+    max.vars <- n-2 # leave 2 degrees of freedom
+    
+    # fit models
+    model.list <- list()
+    model.idx <- 1
+    for (k in 1:length(all.terms)) {
+      if (k == 0) {
+        fml <- as.formula("rsq ~ 1")
+        # fit <- pgls(fml, data = cd)
+        fit <- glm(fml, data = dat)
+        model.name <- paste0("M", model.idx)
+        model.list[[model.name]] <- fit
+        model.idx <- model.idx + 1
+        next
+      }
+      combos <- combn(all.terms, k, simplify = FALSE)
+      for (m in combos) {
+        fml <- as.formula(paste("rsq ~", paste(m, collapse = " + ")))
+        predictor.num <- length(attr(terms(fml), "term.labels"))
+        if (predictor.num >= max.vars) next
+        if (!model.marginal(m)) next
+        # fit <- pgls(fml, data = cd)
+        fit <- glm(fml, data = dat)
+        model.name <- paste0("M", model.idx)
+        model.list[[model.name]] <- fit
+        model.idx <- model.idx + 1
+      }
     }
-    subset.expr <- parse(text = paste(constraints, collapse = " & "))[[1]]
     
-    # dredge
-    ifelse(clade == "Sauropsida", subtract.var <- 3, subtract.var <- 2)
-    models <- dredge(global.model, 
-                     subset = subset.expr, 
-                     m.lim = c(0, nrow(dat) - subtract.var) # ensure degree of freedom is greater than zero
-    )
+    # create model selection table
+    models <- model.sel(model.list)
     models <- models[order(models$AICc), ]
     models <- models[cumsum(models$weight) <= 0.95, ]
+    rm(model.list)
+    gc()
     
-    # get CIs and int in a vector
-    imp <- sw(models)
-    imp <- imp[match(all.terms, names(imp))]
+    # average and calculate CIs
+    num <- nrow(models)
+    imp <- sort(sw(models), decreasing = TRUE)
     avg <- model.avg(models)
     ci <- confint(avg)
     ci <- ci[match(all.terms, row.names(ci)), ] # match ci

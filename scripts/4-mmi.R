@@ -112,7 +112,7 @@ for (i in 1:4) {
     new[n] <- lambda.test(l)
   }
   models$lambda.p <- new
-  write.csv(combined.df, paste0("../results/", tolower(clade), "-models.csv"), row.names = F)
+  write.csv(models, paste0("../results/", tolower(clade), "-models.csv"), row.names = F)
 }
 combined.df <- combined.df[combined.df$importance > 0.5, ]
 write.csv(combined.df, "../results/model-averaging.csv", row.names = F)
