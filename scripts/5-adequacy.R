@@ -22,7 +22,7 @@ main <- na.omit(main[, c("species", "clade", "rsq", variables)])
 clades <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")
 constant.cols <- c("species", "clade", "rsq")
 
-for (h in 1:3) { # for each run
+for (h in 1:2000) { # for each run
   
   print(h)
   run.results <- c()
@@ -64,7 +64,7 @@ for (h in 1:3) { # for each run
     
     # n <- nrow(cd$data)
     n <- nrow(dat)
-    max.vars <- n-2 # leave 2 degrees of freedom
+    max.vars <- n-2 # leave 1 residual degree of freedom
     
     # fit models
     model.list <- list()
@@ -100,22 +100,22 @@ for (h in 1:3) { # for each run
     rm(model.list)
     gc()
     
-    # average and calculate CIs
-    num <- nrow(models)
-    imp <- sort(sw(models), decreasing = TRUE)
-    avg <- model.avg(models)
-    ci <- confint(avg)
-    ci <- ci[match(all.terms, row.names(ci)), ] # match ci
-    lower <- ci[, 1]
-    upper <- ci[, 2]
-    run.results <- c(run.results, imp, upper, lower)
+    # calculate CIs
+    ci.table <- data.frame(matrix(NA, nrow = length(all.terms), ncol = 3))
+    colnames(ci.table) <- c("importance", "lower", "upper")
+    rownames(ci.table) <- all.terms
+    ci.table[names(sw(models)), 1] <- sw(models)
+    ci <- confint(model.avg(models))
+    ci.found <- intersect(row.names(ci), all.terms)
+    ci.table[ci.found, 2:3] <- ci[ci.found, ]
+    run.results <- c(run.results, unlist(ci.table))
     
     # make initial df 
     if (h == 1 && i == 1) {
       df <- data.frame(
-        dataset = rep(clades, each = length(imp) * 3), 
-        stat = rep(rep(c("importance", "upper", "lower"), each = length(imp)), 4), 
-        variable = rep(rep(names(imp), 3), 4)
+        dataset = rep(clades, each = length(all.terms) * 3), 
+        stat = rep(rep(c("importance", "upper", "lower"), each = length(all.terms) / 3), 4), 
+        variable = rep(rep(all.terms, 3), 4)
       )
     }
   }

@@ -46,7 +46,7 @@ for (i in 1:4) {
   
   # n <- nrow(cd$data)
   n <- nrow(dat)
-  max.vars <- n-2 # leave 2 degrees of freedom
+  max.vars <- n-2 # leave 1 residual degree of freedom
   
   # fit models
   model.list <- list()
@@ -82,30 +82,26 @@ for (i in 1:4) {
   rm(model.list)
   gc()
   
-  # average and calculate CIs
-  num <- nrow(models)
-  imp <- sort(sw(models), decreasing = TRUE)
-  avg <- model.avg(models)
-  ci <- confint(avg)
-  ci <- ci[match(names(imp), row.names(ci)), ] # match ci
-  ci <- as.data.frame(ci)
+  # calculate CIs
+  ci.table <- data.frame(matrix(NA, nrow = length(all.terms), ncol = 3))
+  colnames(ci.table) <- c("importance", "lower", "upper")
+  rownames(ci.table) <- all.terms
+  ci.table[names(sw(models)), 1] <- sw(models)
+  ci <- confint(model.avg(models))
+  ci.found <- intersect(row.names(ci), all.terms)
+  ci.table[ci.found, 2:3] <- ci[ci.found, ]
   
   # subset significant models
-  idx <- which(sign(ci[, 1]) == sign(ci[, 2])) # idx where 0 is not in ci
-  ci <- ci[idx, ] # subset ci
-  imp <- imp[idx] # subset importance
-  if (length(imp) == 0) {
-    next
-  }
+  idx <- which(sign(ci.table[, 2]) == sign(ci.table[, 3])) # idx where 0 is not in ci
+  ci.table <- ci.table[idx, ] # subset ci
   
   # append to results
   df <- data.frame(clade, 
-                   names(imp), 
-                   num, 
-                   sapply(1:nrow(ci), function(x) mean(unlist(ci[x, ]))), 
-                   imp, 
-                   ci[, 1], 
-                   ci[, 2])
+                   rownames(ci.table), 
+                   nrow(models), 
+                   sapply(1:nrow(ci.table), 
+                          function(x) mean(unlist(ci.table[x, 2:3]))), 
+                   ci.table)
   colnames(df) <- c("clade", "model", "num.models", "estimate", "importance", "lower", "upper")
   if (nrow(combined.df) == 0) {
     combined.df <- df
