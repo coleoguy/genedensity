@@ -119,7 +119,7 @@ text(cx(0.035), cy(0.51), "Density", srt = 90, cex = 1.3, adj = c(0.5,0.5))
 
 x <- 0.9
 y1 <- 0.7
-y2 <- 0.6
+y2 <- 0.58
 y3 <- 0.35
 
 polygon(cx(c(x-0.05, x-0.05, x-0.036, x-0.036)), 
@@ -131,10 +131,10 @@ polygon(cx(c(x-0.034, x-0.034, x-0.02, x-0.02)),
 
 
 text(cx(x), cy(y3), "Variables", cex = 1.2, adj = c(0,0.5))
-text(cx(x), cy(y1+0.016), "Null", cex = 1.2, adj = c(0,0.5))
-text(cx(x), cy(y1-0.016), "expectation", cex = 1.2, adj = c(0,0.5))
-text(cx(x), cy(y2+0.016), "Observed", cex = 1.2, adj = c(0,0.5))
-text(cx(x), cy(y2-0.016), "value", cex = 1.2, adj = c(0,0.5))
+text(cx(x), cy(y1+0.02), "Null", cex = 1.2, adj = c(0,0.5))
+text(cx(x), cy(y1-0.02), "expectation", cex = 1.2, adj = c(0,0.5))
+text(cx(x), cy(y2+0.02), "Observed", cex = 1.2, adj = c(0,0.5))
+text(cx(x), cy(y2-0.02), "value", cex = 1.2, adj = c(0,0.5))
 
 segments(cx(x-0.02), cy(y1), cx(x-0.05), cy(y1), 
          col = "black", lwd = 2, lty = 1)

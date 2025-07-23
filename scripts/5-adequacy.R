@@ -114,7 +114,7 @@ for (h in 1:2000) { # for each run
     if (h == 1 && i == 1) {
       df <- data.frame(
         dataset = rep(clades, each = length(all.terms) * 3), 
-        stat = rep(rep(c("importance", "upper", "lower"), each = length(all.terms) / 3), 4), 
+        stat = rep(rep(c("importance", "upper", "lower"), each = length(all.terms)), 4), 
         variable = rep(rep(all.terms, 3), 4)
       )
     }
