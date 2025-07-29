@@ -6,9 +6,9 @@ significant <- read.csv("../../results/model-averaging.csv")
 null <- read.csv("../../results/permute.csv")
 
 titles <- c("All species", 
-            "Mammals", 
-            "Ray-finned fish", 
-            "Reptiles")
+            "Mammalia", 
+            "Actinopterygii", 
+            "Sauropsida")
 
 par(
   mfrow = c(2, 2), 
@@ -113,11 +113,11 @@ par(xpd = NA)
 
 
 # axes
-text(cx(0.46), cy(0.06), "Variable β", cex = 1.3, adj = c(0.5,0.5))
-text(cx(0.035), cy(0.51), "Density", srt = 90, cex = 1.3, adj = c(0.5,0.5))
+text(cx(0.44), cy(0.14), "Variable β", cex = 1.3, adj = c(0.5,0.5))
+text(cx(0.026), cy(0.48), "Density", srt = 90, cex = 1.3, adj = c(0.5,0.5))
 
 
-x <- 0.9
+x <- 0.85
 y1 <- 0.7
 y2 <- 0.58
 y3 <- 0.35
@@ -141,5 +141,3 @@ segments(cx(x-0.02), cy(y1), cx(x-0.05), cy(y1),
 
 segments(cx(x-0.02), cy(y2), cx(x-0.05), cy(y2), 
          col = "black", lwd = 2, lty = 3)
-
-

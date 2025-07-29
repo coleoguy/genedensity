@@ -28,7 +28,7 @@ beeswarm(repeats ~ clade,
 # xaxt
 axis(side   = 1,
      at     = seq(num.sp),
-     labels = c("Mammals", "Ray-finned fish", "Reptiles"), 
+     labels = clades, 
      mgp = c(3, 0.9, 0))
 axis(side   = 1,
      at     = seq(num.sp),
