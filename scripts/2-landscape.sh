@@ -45,32 +45,29 @@ echo "Redirecting errors to ${stderr}" 1>&2
 
 # Start loop
 while IFS=, read -r species family; do
-  # If species is non-empty, proceed
-  if [[ -n "$species" ]]; then
-    echo "Processing species: $species"
 
-    # Try to change to the species directory
-    cd "$data"/"$species" || { echo "Failed to change directory to $data/$species"; continue; }
+    echo "Processing species: $species"
+    cd "$data"/"$species"
 
     # Get species id
     family_clean=$(echo "$family" | sed 's/[^a-zA-Z0-9 ]//g' | sed 's/^[ \t]*//;s/[ \t]*$//')
     id=$(famdb.py -i "$library" names "$family_clean" | sed -n '3p' | awk '{print $1}')
     if [[ -z "$id" ]]; then
       echo "Error: Failed to retrieve family ID for $family" >&2
-      continue  # Skip to the next iteration if the ID isn't found
+      continue 
     fi
 
     # Create databases
     mkdir -p "$data"/"$species"/deNovo
-    cd "$data"/"$species"/deNovo || { echo "Error: Failed to change directory to $data/$species/deNovo"; continue; }
-    BuildDatabase -name "$id"_"$species" -engine ncbi "$data"/"$species"/fasta.fa || { echo "Error: BuildDatabase failed"; continue; }
+    cd "$data"/"$species"/deNovo
+    BuildDatabase -name "$id"_"$species" -engine ncbi "$data"/"$species"/fasta.fa || { echo "BuildDatabase failed"; continue; }
 
     # De-novo repeat identification
-    RepeatModeler -database "$id"_"$species" -threads "$threads" -quick || { echo "Error: RepeatModeler failed"; continue; }
+    RepeatModeler -database "$id"_"$species" -threads "$threads" -quick || { echo "RepeatModeler failed"; continue; }
 
     # Get existing library
-    cd "$data"/"$species" || { echo "Error: Failed to change directory to $data/$species"; continue; }
-    famdb.py -i "$library" families --format fasta_name --include-class-in-name --ancestors --descendants "$id" > "$data"/"$species"/knownRepeats.fa || { echo "Error: famdb.py failed"; continue; }
+    cd "$data"/"$species"
+    famdb.py -i "$library" families --format fasta_name --include-class-in-name --ancestors --descendants "$id" > "$data"/"$species"/knownRepeats.fa
 
     # Combine libraries
     cat "$data"/"$species"/deNovo/"$id"_"$species"-families.fa "$data"/"$species"/knownRepeats.fa > "$data"/"$species"/temp.fa
@@ -78,10 +75,10 @@ while IFS=, read -r species family; do
     rm -f "$data"/"$species"/temp.fa
 
     # Run RepeatMasker to align sequences
-    RepeatMasker -qq -a -pa "$threads" -lib "$data"/"$species"/allRepeats.fa "$data"/"$species"/fasta.fa || { echo "Error: RepeatMasker failed"; continue; }
+    RepeatMasker -qq -a -pa "$threads" -lib "$data"/"$species"/allRepeats.fa "$data"/"$species"/fasta.fa || { echo "RepeatMasker failed"; continue; }
 
     # Calculate k2p distance
-    calcDivergenceFromAlign.pl -s "$divsums"/"$species".divsum "$data"/"$species"/fasta.fa.align || { echo "Error: calcDivergenceFromAlign.pl failed"; continue; }
-  fi
+    calcDivergenceFromAlign.pl -s "$divsums"/"$species".divsum "$data"/"$species"/fasta.fa.align
+
 done < "$data"/to.mask.csv
 
