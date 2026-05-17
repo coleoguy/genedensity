@@ -25,6 +25,7 @@ plot(p,
      ylim = c(-150, 450),  #450
      direction = "downwards", 
      ftype = "off", 
+     type = "fan", 
      plot = TRUE)
 
 # tip labels

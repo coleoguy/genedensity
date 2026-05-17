@@ -1,0 +1,173 @@
+library(viridis)
+
+main.df <- read.csv("../../results/model-averaging.csv")
+allrepeats.df <- read.csv("../../results/model-averaging-allrepeats.csv")
+
+# keep rows where importance > 0.5 and CI doesn't include 0
+keep.sig <- function(df) {
+  df[!is.na(df$importance) & df$importance > 0.5 & 
+       !is.na(df$lower) & !is.na(df$upper) & 
+       sign(df$lower) == sign(df$upper), ]
+}
+main.df <- keep.sig(main.df)
+allrepeats.df <- keep.sig(allrepeats.df)
+
+# flip the signs of gini and CV so larger number -> more homogeneous
+flip <- function(df) {
+  to.flip <- df$response %in% c("gini", "cv")
+  df$estimate.flip <- ifelse(to.flip, -df$estimate, df$estimate)
+  df$lower.flip <- ifelse(to.flip, -df$upper, df$lower)
+  df$upper.flip <- ifelse(to.flip, -df$lower, df$upper)
+  df
+}
+main.df <- flip(main.df)
+allrepeats.df <- flip(allrepeats.df)
+
+clades <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")
+response.offset <- c(rsq = 0.25, gini = 0, cv = -0.25)
+response.pch <- c(rsq = 21, gini = 22, cv = 24)
+
+# colors for importance — fixed scale 0.5 to 1
+ncol <- 10000
+pal <- viridis(ncol, begin = 0, end = 0.8, option = "A")
+imp.min <- 0.5
+imp.max <- 1.0
+
+add.aesthetics <- function(df) {
+  df$clade <- factor(df$clade, levels = clades)
+  df$response <- factor(df$response, levels = c("rsq", "gini", "cv"))
+  df$pch <- response.pch[as.character(df$response)]
+  imp <- df$importance
+  idx <- round(((imp - imp.min) / (imp.max - imp.min)) * (ncol - 1)) + 1
+  df$point.col <- pal[pmax(1, pmin(ncol, idx))]
+  df
+}
+main.df <- add.aesthetics(main.df)
+allrepeats.df <- add.aesthetics(allrepeats.df)
+
+draw.panel <- function(dat, title.str, x.range, all.models, all.ylabs,
+                       show.yaxis = TRUE, show.legend = FALSE) {
+
+  y.base <- setNames(rev(seq_len(length(all.models))), all.models)
+  y.range <- c(0.3, length(all.models) + 0.7)
+
+  plot(0, 0, type = "n", 
+       xlim = x.range, ylim = y.range, 
+       xlab = "Sign-aligned β", ylab = NA, axes = FALSE, mgp = c(2.5, 0, 0))
+  title(main = title.str, line = 0.6, adj = 0, cex.main = 0.95)
+
+  abline(v = 0, lty = 5, lwd = 1, col = "black")
+
+  # separators
+  for (p in seq_len(length(all.models) - 1)) {
+    abline(h = p + 0.5, lty = 3, lwd = 0.5, col = "grey85")
+  }
+
+
+  if (nrow(dat) > 0) {
+    dat <- dat[order(dat$model, dat$response), ]
+    dat$y.base <- y.base[as.character(dat$model)]
+    dat$y <- dat$y.base + response.offset[as.character(dat$response)]
+
+    # limit the height of the importance bar end things
+    cap.h <- min(0.1, diff(y.range) * 0.02)
+
+    segments(dat$lower.flip, dat$y, dat$upper.flip, 
+             dat$y, lwd = 1.4, col = "black")
+    segments(dat$lower.flip, dat$y - cap.h, dat$lower.flip, 
+             dat$y + cap.h, lwd = 1.4, col = "black")
+    segments(dat$upper.flip, dat$y - cap.h, dat$upper.flip, 
+             dat$y + cap.h, lwd = 1.4, col = "black")
+
+    points(dat$estimate.flip, dat$y, pch = dat$pch, cex = 2.2, 
+           bg = dat$point.col, col = "black", lwd = 0.8)
+  }
+
+  axis(1, at = pretty(x.range), mgp = c(1, 0.8, 0))
+  minor.lo <- floor(x.range[1])
+  minor.hi <- ceiling(x.range[2])
+  axis(1, at = seq(minor.lo, minor.hi, by = 0.5), labels = FALSE, tcl = -0.2)
+  axis(1, at = seq(minor.lo, minor.hi, by = 1), labels = FALSE, tcl = -0.5)
+  if (show.yaxis) {
+    axis(2, at = y.base, labels = all.ylabs, las = 2, cex.axis = 0.9)
+  }
+  box()
+
+  if (show.legend) {
+    usr <- par("usr")
+    par(xpd = NA)
+    lx <- usr[2] + 0.04 * diff(usr[1:2])
+
+    legend(lx, usr[4], 
+           legend = c("R²", "Gini", "CV"), 
+           col = "black", 
+           pch = response.pch[c("rsq", "gini", "cv")], 
+           lwd = 1.4, pt.cex = 1.6, 
+           title = "Response metric", title.adj = 0, 
+           bty = "n", cex = 0.82, xjust = 0, yjust = 1)
+
+    margin.r.user <- diff(usr[1:2]) / par("pin")[1] * par("mai")[4]
+    bx1 <- usr[2] + 0.20 * margin.r.user
+    bx2 <- usr[2] + 0.92 * margin.r.user
+    by1 <- usr[3] + 0.04 * diff(usr[3:4])
+    by2 <- usr[3] + 0.08 * diff(usr[3:4])
+    bar_img <- array(t(col2rgb(pal) / 255), c(1, ncol, 3))
+    rasterImage(bar_img, bx1, by1, bx2, by2)
+    rect(bx1, by1, bx2, by2, border = "black", lwd = 0.8)
+    tick_at <- c(bx1, mean(c(bx1, bx2)), bx2)
+    tick_lab <- c("0.5", "0.75", "1.0")
+    axis(1, at = tick_at, labels = tick_lab, 
+         pos = by1 - 0.015 * diff(usr[3:4]), 
+         tck = -0.012, cex.axis = 0.65, mgp = c(1, -0.01, 1))
+    text(mean(c(bx1, bx2)), by2 + 0.03 * diff(usr[3:4]), 
+         "Variable importance", adj = c(0.5, 0), cex = 0.75)
+    par(xpd = FALSE)
+  }
+}
+
+# per-clade comparison plot
+par(mfrow = c(1, 1))
+for (cl in clades) {
+  m <- main.df[main.df$clade == cl, ]
+  a <- allrepeats.df[allrepeats.df$clade == cl, ]
+
+  # union of predictors
+  all.models <- sort(unique(c(m$model, a$model)))
+
+  # build shared y-axis labels
+  all.ylabs <- sapply(all.models, function(i) {
+    rep <- toupper(regmatches(i, regexpr("(?<=\\.)[a-zA-Z]+", i, perl = TRUE)))
+    if (length(rep) == 0) rep <- ""
+    if (rep == "OTHERS") rep <- "Others"
+    if (rep == "UNKNOWN") rep <- "Unknown"
+    if (rep == "TOTAL") rep <- "All repeats"
+    if (grepl(":", i)) return(paste(rep, "age x prop."))
+    type <- if (sub("\\..*", "", i) == "prop") "proportion" else "age"
+    paste(rep, type)
+  })
+
+  rng <- range(c(m$lower.flip, m$upper.flip, a$lower.flip, a$upper.flip), 
+               na.rm = TRUE) + c(-0.5, 0.5)
+  if (all(is.infinite(rng))) rng <- c(-1, 1)
+
+  layout(matrix(c(1, 2), 1, 2), widths = c(1, 1.15))
+
+  par(mar = c(5, 8, 3, 0.5) + 0.1)
+  n.m <- if (nrow(m) > 0) m$num.models[m$response == "rsq"][1] else NA
+  title.l <- if (!is.na(n.m)) {
+    paste0("Per-class: ", cl, "  (", n.m, " models)") 
+    } else paste0("Per-class: ", cl)
+  draw.panel(m, title.l, rng, all.models, all.ylabs, 
+             show.yaxis = TRUE, show.legend = FALSE)
+
+  par(mar = c(5, 0.5, 3, 11) + 0.1)
+  n.a <- if (nrow(a) > 0) a$num.models[a$response == "rsq"][1] else NA
+  title.r <- if (!is.na(n.a)) {
+    paste0("All-repeats: ", cl, "  (", n.a, " models)") 
+    } else paste0("All-repeats: ", cl)
+  draw.panel(a, title.r, rng, all.models, all.ylabs, 
+             show.yaxis = FALSE, show.legend = TRUE)
+
+  layout(1)
+}
+

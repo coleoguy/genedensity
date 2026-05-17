@@ -25,6 +25,19 @@ dataFromFasta <- function(fasta.path, max.contig, verbose) {
   return(fasta.data)
 }
 
+dataFromFai <- function(fai.path, max.contig, verbose = FALSE) {
+  fai <- fread(fai.path, header = FALSE, 
+               col.names = c("name", "length", "offset", "linebases", "linewidth"),
+               showProgress = verbose)
+  size.Mb <- fai$length / 1000000
+  name <- fai$name
+  asmblysize.Mb <- sum(size.Mb, na.rm = TRUE)
+  fasta.data <- data.table(name, size.Mb, asmblysize.Mb)
+  fasta.data <- fasta.data[order(fasta.data$size.Mb, decreasing = TRUE), ]
+  fasta.data <- head(fasta.data, max.contig)
+  return(fasta.data)
+}
+
 ## Takes a species' gtf file path as an input and reads the file. then, filter
 ## for rows that are annotated as "gene". for each contig name input, get the
 ## number of rows with matching contig names. also gets the number of nuclear
