@@ -1,4 +1,6 @@
 library(viridis)
+library(devEMF)
+
 
 main.df <- read.csv("../../results/model-averaging.csv")
 highinf.df <- read.csv("../../results/model-averaging-highinfluence.csv")
@@ -125,6 +127,7 @@ draw.panel <- function(dat, title.str, x.range, all.models, all.ylabs,
 # per-clade comparison plot
 par(mfrow = c(1, 1))
 for (cl in clades) {
+  #emf(paste0(cl, ".emf"), width = 8, height = 4)
   m <- main.df[main.df$clade == cl, ]
   h <- highinf.df[highinf.df$clade == cl, ]
 
@@ -152,7 +155,7 @@ for (cl in clades) {
   layout(matrix(c(1, 2), 1, 2), widths = c(1, 1.15))
 
   par(mar = c(5, 8, 3, 0.5) + 0.1)
-  n.m <- if (nrow(m) > 0) m$num.models[m$response == "rsq"][1] else NA
+  n.m <- if (nrow(m) > 0) m$num.models[!is.na(m$num.models)][1] else NA
   title.l <- if (!is.na(n.m)) {
     paste0("Full data: ", cl, "  (", n.m, " models)") 
     } else paste0("Full data: ", cl)
@@ -166,4 +169,5 @@ for (cl in clades) {
              show.yaxis = FALSE, show.legend = TRUE)
 
   layout(1)
+  # dev.off()
 }

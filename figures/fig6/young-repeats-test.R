@@ -5,6 +5,7 @@
 
 
 library(viridis)
+library(devEMF)
 
 # find aic
 aicc <- function(fit) {
@@ -43,11 +44,11 @@ read.young.frac <- function(path, cutoff, exclude = character(0)) {
 }
 
 # read the response variables
-rsq.df <- read.csv("../results/rsq.csv")
+rsq.df <- read.csv("../../results/rsq.csv")
 rsq.df[[1]] <- tolower(gsub(" ", "_", rsq.df[[1]]))
 species.col <- colnames(rsq.df)[1]
 
-files <- list.files("../results/divsums", pattern = "\\.divsum$", full.names = T)
+files <- list.files("../../results/divsums", pattern = "\\.divsum$", full.names = T)
 
 clades <- c("Mammalia", "Actinopterygii", "Sauropsida")
 responses  <- c("rsq", "gini.flip", "cv.flip")
@@ -120,6 +121,7 @@ for (i in sens.df$w1) { # set color
 sens.df$point.col <- temp
 par(mfrow = c(1, 1))
 for (ri in seq_along(responses)) {
+  emf(paste0(ri, ".emf"), width = 12, height = 4)
   resp.name <- resp.names[ri]
   sub <- sens.df[sens.df$response == resp.name, ]
 
@@ -160,7 +162,7 @@ for (ri in seq_along(responses)) {
   legend(lx, usr[4], 
          legend = c("All", clades),
          pch = group.pch[c("All", clades)], 
-         pt.bg = "grey60", col = "black", 
+         col = "black", 
          pt.cex = 1.6, 
          title = "Group", title.adj = 0, 
          bty = "n", cex = 0.82, xjust = 0, yjust = 1)
@@ -182,4 +184,5 @@ for (ri in seq_along(responses)) {
        "w(M1)  (open: w < 0.5)", adj = c(0.5, 0), cex = 0.75)
 
   par(xpd = FALSE)
+  dev.off()
 }

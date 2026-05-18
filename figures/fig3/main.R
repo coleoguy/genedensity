@@ -1,4 +1,5 @@
 library(viridis)
+library(devEMF) # svg doesn't work in powerpoint
 
 combined.df <- read.csv("../../results/model-averaging.csv")
 
@@ -41,6 +42,7 @@ combined.df$point.col <- pal[pmax(1, pmin(ncol, idx))]
 # per-clade plot
 par(mfrow = c(1, 1))
 for (cl in clades) {
+  emf(paste0(cl, ".emf"), width = 7, height = 4)
   dat <- combined.df[combined.df$clade == cl, ]
   
   par(mar = c(5, 8, 3, 10) + 0.1)
@@ -66,7 +68,7 @@ for (cl in clades) {
     ylabs <- c(ylabs, paste(rep, type))
   }
   
-  n.models <- dat$num.models[dat$response == "rsq"][1]
+  n.models <- dat$num.models[!is.na(dat$num.models)][1]
   
   x.range <- range(c(dat$lower.flip, dat$upper.flip), na.rm = TRUE) + c(-0.5, 0.5)
   y.range <- range(dat$y) + c(-0.7, 0.7)
@@ -133,4 +135,5 @@ for (cl in clades) {
        "Variable importance", adj = c(0.5, 0), cex = 0.75)
   
   par(xpd = FALSE)
+  dev.off()
 }
