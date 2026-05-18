@@ -3,7 +3,7 @@
 
 library(beeswarm)
 
-dat <- read.csv("../results/rsq.csv")
+dat <- read.csv("../../results/rsq.csv")
 clades <- c("Mammalia", "Actinopterygii", "Sauropsida")
 dat <- dat[dat$clade %in% clades, ]
 dat$clade <- factor(dat$clade, levels = clades)
@@ -50,7 +50,7 @@ for (ri in seq_along(responses)) {
 
 # phylo vs non-phylo
 library(phytools)
-tree <- read.tree("../data/formatted-tree.nwk")
+tree <- read.tree("../../data/formatted-tree.nwk")
 tree$tip.label <- tolower(tree$tip.label)
 int <- intersect(dat$species, tree$tip.label)
 pruned.tree <- keep.tip(tree, int)
