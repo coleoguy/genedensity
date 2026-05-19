@@ -110,8 +110,8 @@ run.analysis <- function(rsq, repeats, clade, response = "rsq",
 plan(multisession, workers = 12)
 combined.df <- data.frame()
 allrepeats.df <- data.frame()
-loso.df <- data.frame()
-subsample.df <- data.frame()
+#loso.df <- data.frame()
+#subsample.df <- data.frame()
 highinf.df <- data.frame()
 
 # run the loop
@@ -143,58 +143,58 @@ for (response in responses) {
   # cur.ar <- cur.ar[cur.ar$importance > 0.5, ]
   allrepeats.df <- rbind(allrepeats.df, cur.ar)
 
-  print("3. leaving out each species")
-  for (clade in clades) {
-    dat <- main.results[[clade]]$dat
-    top.formula <- main.results[[clade]]$top.formula
+  #print("3. leaving out each species")
+  #for (clade in clades) {
+  #  dat <- main.results[[clade]]$dat
+  #  top.formula <- main.results[[clade]]$top.formula
 
-    p <- progressor(steps = nrow(dat))
-    loso.list <- future_lapply(seq_len(nrow(dat)), function(i) {
-      fit <- glm(top.formula, data = dat[-i, ])
-      coefs <- coef(fit)
-      p(sprintf("[%s] dropped %s", clade, dat$species[i]))
-      data.frame(
-        response = response, 
-        clade = clade, 
-        dropped.species = dat$species[i], 
-        predictor = names(coefs), 
-        coef = coefs, 
-        row.names = NULL
-      )
-    }, future.seed = TRUE)
+  #  p <- progressor(steps = nrow(dat))
+  #  loso.list <- future_lapply(seq_len(nrow(dat)), function(i) {
+  #    fit <- glm(top.formula, data = dat[-i, ])
+  #    coefs <- coef(fit)
+  #    p(sprintf("[%s] dropped %s", clade, dat$species[i]))
+  #    data.frame(
+  #      response = response, 
+  #      clade = clade, 
+  #      dropped.species = dat$species[i], 
+  #      predictor = names(coefs), 
+  #      coef = coefs, 
+  #      row.names = NULL
+  #    )
+  #  }, future.seed = TRUE)
 
-    loso.df <- rbind(loso.df, do.call(rbind, loso.list))
-  }
+  #  loso.df <- rbind(loso.df, do.call(rbind, loso.list))
+  #}
 
 
-  print("4. drop 20% of species and refit 95% of models")
-  n.iter <- 1000
-  for (clade in clades) {
-    dat <- main.results[[clade]]$dat
-    set.formulas <- main.results[[clade]]$set.formulas
-    all.terms <- main.results[[clade]]$all.terms
+  #print("4. drop 20% of species and refit 95% of models")
+  #n.iter <- 1000
+  #for (clade in clades) {
+  #  dat <- main.results[[clade]]$dat
+  #  set.formulas <- main.results[[clade]]$set.formulas
+  #  all.terms <- main.results[[clade]]$all.terms
 
-    sub.list <- future_lapply(seq_len(n.iter), function(b) {
-      idx <- sample(seq_len(nrow(dat)), size = round(0.8 * nrow(dat)))
-      sub.dat <- dat[idx, ]
+  #  sub.list <- future_lapply(seq_len(n.iter), function(b) {
+  #    idx <- sample(seq_len(nrow(dat)), size = round(0.8 * nrow(dat)))
+  #    sub.dat <- dat[idx, ]
 
-      res <- tryCatch({
-        fits <- lapply(set.formulas, function(f) glm(f, data = sub.dat))
-        names(fits) <- paste0("M", seq_along(fits))
-        models.sub <- model.sel(fits)
-        ci.table <- get.table(models.sub, all.terms)
-        ci.table$response <- response
-        ci.table$clade <- clade
-        ci.table$iter <- b
-        ci.table$predictor <- rownames(ci.table)
-        rownames(ci.table) <- NULL
-        ci.table
-      }, error = function(e) NULL)
-      return(res)
-    }, future.seed = TRUE)
+  #    res <- tryCatch({
+  #      fits <- lapply(set.formulas, function(f) glm(f, data = sub.dat))
+  #      names(fits) <- paste0("M", seq_along(fits))
+  #      models.sub <- model.sel(fits)
+  #      ci.table <- get.table(models.sub, all.terms)
+  #      ci.table$response <- response
+  #      ci.table$clade <- clade
+  #      ci.table$iter <- b
+  #      ci.table$predictor <- rownames(ci.table)
+  #      rownames(ci.table) <- NULL
+  #      ci.table
+  #    }, error = function(e) NULL)
+  #    return(res)
+  #  }, future.seed = TRUE)
 
-    subsample.df <- rbind(subsample.df, do.call(rbind, sub.list))
-  }
+  #  subsample.df <- rbind(subsample.df, do.call(rbind, sub.list))
+  #}
 
 
   print("5. drop 10% top species and refit")
@@ -225,8 +225,8 @@ for (response in responses) {
 
 write.csv(combined.df, "../results/model-averaging.csv", row.names = FALSE)
 write.csv(allrepeats.df, "../results/model-averaging-allrepeats.csv", row.names = FALSE)
-write.csv(loso.df, "../results/loso.csv", row.names = FALSE)
-write.csv(subsample.df, "../results/subsample.csv", row.names = FALSE)
+#write.csv(loso.df, "../results/loso.csv", row.names = FALSE)
+#write.csv(subsample.df, "../results/subsample.csv", row.names = FALSE)
 write.csv(highinf.df, "../results/model-averaging-highinfluence.csv", row.names = FALSE)
 
 print("all done")
