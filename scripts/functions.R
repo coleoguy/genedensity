@@ -146,3 +146,22 @@ model.marginal <- function(terms) {
   }
   TRUE
 }
+
+
+
+fitAllModels <- function(dat, all.terms, response = "rsq") {
+  n <- nrow(dat)
+  max.vars <- n - 2 # allow one df
+  model.list <- list()
+  for (y in seq_along(all.terms)) {
+    for (z in combn(all.terms, y, simplify = FALSE)) {
+      fml <- as.formula(paste(response, "~", paste(z, collapse = " + ")))
+      if (length(attr(terms(fml), "term.labels")) >= max.vars) next # skip if df < 1
+      model.list[[length(model.list) + 1L]] <- glm(fml, data = dat)
+    }
+  }
+  names(model.list) <- paste0("M", seq_along(model.list))
+  models <- model.sel(model.list)
+  models <- models[cumsum(models$weight[order(models$AICc)]) <= 0.95, ]
+  return(models)
+}
