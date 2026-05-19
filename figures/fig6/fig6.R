@@ -1,0 +1,96 @@
+# Zhaobo Hu
+# zhaobohu2002@gmail.com
+
+library(viridis)
+library(devEMF)
+
+sens.df <- read.csv("../../results/young-repeats-sensitivity.csv")
+groups <- c("All", "Mammalia", "Actinopterygii", "Sauropsida")
+resp.names <- c("rsq", "gini", "cv")
+cutoffs <- sort(unique(sens.df$cutoff))
+response.pch <- c(rsq = 21, gini = 22, cv = 24)
+ncol <- 10000
+pal <- viridis(ncol, begin = 0, end = 0.8, option = "A")
+w.min <- 0.5
+w.max <- 1.0
+
+# colors
+sens.df$point.col <- character(nrow(sens.df))
+for (i in seq_len(nrow(sens.df))) {
+  if (!isTRUE(sens.df$supported[i])) {
+    sens.df$point.col[i] <- "white"
+    next
+  }
+  w <- sens.df$w1[i]
+  idx <- round(((w - w.min) / (w.max - w.min)) * (ncol - 1)) + 1
+  sens.df$point.col[i] <- pal[pmax(1, pmin(ncol, idx))]
+}
+
+
+# loop across clades
+par(mfrow = c(1, 1))
+for (grp in groups) {
+
+  emf(paste0(grp, ".emf"), width = 8, height = 4)
+  sub <- sens.df[sens.df$group == grp, ]
+  par(mar = c(5, 5, 3, 10) + 0.1)
+  y.range <- range(c(0, sub$beta), na.rm = TRUE)
+  y.pad <- max(diff(y.range), 0.05) * 0.15
+  y.range <- y.range + c(-y.pad, y.pad)
+  plot(NA, NA, 
+       xlim = range(cutoffs), ylim = y.range, 
+       xlab = "Kimura divergence cutoff (%)", 
+       ylab = "Sign-aligned β", 
+       axes = FALSE, mgp = c(3, 0, 0))
+  title(main = grp, 
+        adj = 0, cex.main = 1.1)
+
+  axis(1, at = cutoffs, mgp = c(1, 0.8, 0))
+  axis(2, mgp = c(1, 0.8, 0))
+  box()
+
+  abline(h = 0, lty = 3, lwd = 0.8, col = "grey40")
+
+  # one trajectory per response variable
+  for (resp.name in resp.names) {
+    ssub <- sub[sub$response == resp.name, ]
+    ssub <- ssub[order(ssub$cutoff), ]
+    if (nrow(ssub) == 0) next
+    lines(ssub$cutoff, ssub$beta, lwd = 1.2, col = "grey40")
+    points(ssub$cutoff, ssub$beta,
+           pch = response.pch[resp.name], bg = ssub$point.col, 
+           col = "black", cex = 1.8, lwd = 0.7)
+  }
+
+  usr <- par("usr"); par(xpd = NA)
+  lx <- usr[2] + 0.04 * diff(usr[1:2])
+
+  legend(lx, usr[4], 
+         legend = c("R²", "Gini", "CV"), 
+         pch = response.pch[c("rsq", "gini", "cv")], 
+         col = "black", 
+         pt.cex = 1.6, 
+         title = "Response metric", title.adj = 0, 
+         bty = "n", cex = 0.82, xjust = 0, yjust = 1)
+
+  # color bar for w(M1)
+  margin.r.user <- diff(usr[1:2]) / par("pin")[1] * par("mai")[4]
+  bx1 <- usr[2] + 0.20 * margin.r.user
+  bx2 <- usr[2] + 0.92 * margin.r.user
+  by1 <- usr[3] + 0.04 * diff(usr[3:4])
+  by2 <- usr[3] + 0.08 * diff(usr[3:4])
+  bar_img <- array(t(col2rgb(pal) / 255), c(1, ncol, 3))
+  rasterImage(bar_img, bx1, by1, bx2, by2)
+  rect(bx1, by1, bx2, by2, border = "black", lwd = 0.8)
+  tick_at  <- c(bx1, mean(c(bx1, bx2)), bx2)
+  tick_lab <- c("0.5", "0.75", "1.0")
+  axis(1, at = tick_at, labels = tick_lab, 
+       pos = by1 - 0.015 * diff(usr[3:4]), 
+       tck = -0.012, cex.axis = 0.65, mgp = c(1, -0.01, 1))
+  text(mean(c(bx1, bx2)), by2 + 0.03 * diff(usr[3:4]), 
+       "Variable importance", 
+       adj = c(0.5, 0), cex = 0.75)
+
+  par(xpd = FALSE)
+  dev.off()
+}
