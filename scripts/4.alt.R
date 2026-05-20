@@ -103,7 +103,7 @@ run.analysis <- function(rsq, repeats, clade, response = "rsq",
 
   list(
     out = out, 
-    models = models,  
+    # models = models,  
     dat = dat, 
     all.terms = all.terms, 
     response = response, 
@@ -172,6 +172,8 @@ for (response in responses) {
 
   cur.hi <- do.call(rbind, highinf.results)
   highinf.df <- rbind(highinf.df, cur.hi)
+  rm(main.results, allrepeats.results, highinf.results)
+  gc()
 }
 
 write.csv(combined.df, "../results/model-averaging.csv", row.names = FALSE)
