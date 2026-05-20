@@ -5,9 +5,11 @@
 
 library(MuMIn)
 library(phytools)
+library(future.apply)
 options(na.action = "na.fail")
 
 source("functions.R")
+no.interactions <- c("Sauropsida")
 
 rsq <- read.csv("../results/rsq.csv")
 repeats <- read.csv("../results/repeat-results.csv")
@@ -35,8 +37,10 @@ df <- data.frame(
 
 n.runs <- 2000
 
-for (i in seq_len(n.runs)) {
-  
+
+plan(multisession, workers = 4)
+
+run.list <- future_lapply(seq_len(n.runs), function(i) {
   perm.main <- main
   perm.cols <- setdiff(names(perm.main), constant.cols)
   perm.main[, perm.cols] <- perm.main[sample(nrow(perm.main)), perm.cols]
@@ -47,13 +51,17 @@ for (i in seq_len(n.runs)) {
       # subset to clade
       dat <- if (clade == "All") {
         perm.main 
-        } else perm.main[perm.main$clade == clade, ]
+      } else perm.main[perm.main$clade == clade, ]
       
       # build term list for this clade
       cur.vars <- colnames(dat)[grep("^(prop|age)\\.", colnames(dat))]
       cur.rep.types <- unique(sub("^[^.]*\\.", "", cur.vars))
-      cur.interact <- paste0("age.", cur.rep.types, ":prop.", cur.rep.types)
-      cur.terms <- c(cur.vars, cur.interact)
+      if (clade %in% no.interactions) {
+        cur.terms <- cur.vars
+      } else {
+        cur.interact <- paste0("age.", cur.rep.types, ":prop.", cur.rep.types)
+        cur.terms <- c(cur.vars, cur.interact)
+      }
       max.vars <- nrow(dat) - 2
       # rescae predictors to [0, 1]
       for (j in cur.vars) {
@@ -75,7 +83,11 @@ for (i in seq_len(n.runs)) {
       
       # keep models within the 95% cumulative weight confidence set
       models <- model.sel(model.list)
-      models <- models[cumsum(models$weight[order(models$AICc)]) <= 0.95, ]
+      ord <- order(models$AICc)
+      cumw <- cumsum(models$weight[ord])
+      n.keep <- which(cumw >= 0.95)[1]
+      if (is.na(n.keep)) n.keep <- length(cumw)
+      models <- models[ord[seq_len(n.keep)], ]
       
       # extract importance and model-averaged CIs
       ct <- data.frame(matrix(NA, nrow = length(all.terms), ncol = 3))
@@ -98,10 +110,16 @@ for (i in seq_len(n.runs)) {
       }
       
       run.results <- c(run.results, unlist(ct))
+      rm(model.list, models)
+      gc()
     }
   }
-  df[[paste0("run", i)]] <- run.results
   cat("run", i, "of", n.runs, "complete\n")
+  return(run.results)
+}, future.seed = TRUE)
+
+for (i in seq_along(run.list)) {
+  df[[paste0("run", i)]] <- run.list[[i]]
 }
 
 write.csv(df, "permute.csv", row.names = FALSE)
