@@ -1,8 +1,8 @@
 library(viridis)
 library(devEMF)
 
-main.df <- read.csv("../../results/model-averaging.csv")
-allrepeats.df <- read.csv("../../results/model-averaging-allrepeats.csv")
+main.df <- read.csv("../../../results/model-averaging.csv")
+allrepeats.df <- read.csv("../../../results/model-averaging-allrepeats.csv")
 
 # keep rows where importance > 0.5 and CI doesn't include 0
 keep.sig <- function(df) {
