@@ -65,10 +65,20 @@ run.analysis <- function(rsq, repeats, clade, response = "rsq",
   ci.table <- data.frame(matrix(NA, nrow = length(all.terms), ncol = 3))
   colnames(ci.table) <- c("importance", "lower", "upper")
   rownames(ci.table) <- all.terms
-  ci.table[names(sw(models)), 1] <- sw(models)
-  ci <- confint(model.avg(models))
-  ci.found <- intersect(row.names(ci), all.terms)
-  ci.table[ci.found, 2:3] <- ci[ci.found, ]
+  # bypass the sw() error when the confidence set collapses to one model
+  if (nrow(models) < 2) { 
+    top.fit <- get.models(models, 1)[[1]]
+    top.terms <- attr(terms(top.fit), "term.labels")
+    ci.table[intersect(top.terms, all.terms), "importance"] <- 1
+    ci <- confint(top.fit)
+    ci.found <- intersect(rownames(ci), all.terms)
+    ci.table[ci.found, c("lower", "upper")] <- ci[ci.found, ]
+  } else {
+    ci.table[names(sw(models)), 1] <- sw(models)
+    ci <- confint(model.avg(models))
+    ci.found <- intersect(row.names(ci), all.terms)
+    ci.table[ci.found, 2:3] <- ci[ci.found, ]
+  }
 
   # build output data frame
   out <- data.frame(
@@ -103,7 +113,7 @@ run.analysis <- function(rsq, repeats, clade, response = "rsq",
 }
 
 
-plan(multisession, workers = 8)
+plan(multisession, workers = 4)
 combined.df <- data.frame()
 allrepeats.df <- data.frame()
 highinf.df <- data.frame()
