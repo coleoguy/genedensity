@@ -103,7 +103,7 @@ run.analysis <- function(rsq, repeats, clade, response = "rsq",
 }
 
 
-plan(multisession, workers = 12)
+plan(multisession, workers = 8)
 combined.df <- data.frame()
 allrepeats.df <- data.frame()
 highinf.df <- data.frame()
@@ -142,7 +142,7 @@ for (response in responses) {
     dat <- main.results[[clade]]$dat
     top.formula <- main.results[[clade]]$top.formula
 
-    top.model <- glm(top.formula, data = dat)
+    top.model <- lm(top.formula, data = dat)
     cd <- cooks.distance(top.model)
 
     n.drop <- ceiling(0.10 * nrow(dat))
