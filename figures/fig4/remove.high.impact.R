@@ -171,3 +171,39 @@ for (cl in clades) {
   layout(1)
   dev.off()
 }
+
+
+
+
+
+
+
+
+highinf.df <- read.csv("../../results/model-averaging-highinfluence.csv")
+
+# deduplicate
+hi.uni <- highinf.df[!duplicated(highinf.df[, c("response", "clade")]),
+             c("response", "clade", "dropped.species")]
+
+# make table
+long <- do.call(rbind, lapply(seq_len(nrow(hi.uni)), function(i) {
+  data.frame(
+    dataset = hi.uni$clade[i], 
+    response = hi.uni$response[i], 
+    species = strsplit(hi.uni$dropped.species[i], ";")[[1]], 
+    dropped = T, 
+    stringsAsFactors = F
+  )
+}))
+
+# convert to wide
+wide <- reshape(long, idvar = c("dataset", "species"),
+                timevar = "response", direction = "wide")
+wide[, c("dropped.rsq", "dropped.gini", "dropped.cv")] <- !is.na(
+  wide[, c("dropped.rsq", "dropped.gini", "dropped.cv")]
+)
+
+# add a number of responses column
+wide$n.responses <- rowSums(wide[, c("dropped.rsq", "dropped.gini", "dropped.cv")])
+wide <- wide[order(wide$dataset, -wide$n.responses, wide$species), ]
+write.csv(wide, "../../results/dropped-species-table.csv", row.names = FALSE)
