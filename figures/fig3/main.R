@@ -85,7 +85,7 @@ for (cl in clades) {
   
   # subtle horizontal separators between predictors
   for (p in seq_len(length(unique.models) - 1)) {
-    abline(h = p + 0.5, lty = 3, lwd = 0.5, col = "grey85")
+    abline(h = p + 0.5, lty = 3, lwd = 0.8, col = "grey30")
   }
   
   # CI bars

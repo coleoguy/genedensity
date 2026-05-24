@@ -66,10 +66,13 @@ for (i in seq_along(responses)) {
   
   print(paste0("standard ANOVA F: ", aov.summ$F[1]))
   print(paste0("standard ANOVA P: ", aov.summ$`Pr(>F)`[1]))
+  
+  tukey <- TukeyHSD(aov.fit)
+  print(tukey)
 
   # phylogenetic ANOVA
   y <- setNames(sub.dat[[resp]], sub.dat$species)
-  x <- setNames(sub.dat$clade,    sub.dat$species)
+  x <- setNames(sub.dat$clade, sub.dat$species)
   pa <- phylANOVA(pruned.tree, x, y, nsim = 1000, posthoc = FALSE)
   print(paste0("phylo ANOVA F: ", pa$F))
   print(paste0("phylo ANOVA P: ", pa$Pf))
